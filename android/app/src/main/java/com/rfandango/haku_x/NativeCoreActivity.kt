@@ -394,6 +394,16 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
      * by the core through adrenotools; none: the system driver. */
     GpuDriverHelper.init(this)
     val driverLib = GpuDriverHelper.getInstalledDriverLibrary()
+    val chip = GpuDriverHelper.detectedChip()
+    if (!driverLib.isNullOrEmpty() && GameGraphicsCompatibility.candidate(gameKey(), chip)) {
+      val libraryHash = runCatching { BundledDriverArchive.sha256(File(GpuDriverHelper.driverInstallDir, driverLib)) }.getOrNull()
+      GameGraphicsCompatibility.quirks(gameKey(), chip, libraryHash, System.getenv("HAKUX_HLE_QUIRKS"),
+        GpuDriverHelper.hasRuntimeDriverOverride())?.let { spec ->
+        // Native defaults stay intact for all other titles, devices and driver binaries.
+        android.system.Os.setenv("HAKUX_HLE_QUIRKS", spec, true)
+        Log.i(TAG, "graphics compatibility: MW Black Edition / T820 / exact P77r1: $spec")
+      }
+    }
     if (!driverLib.isNullOrEmpty()) {
       android.util.Log.i("hakuX-app", "GPU driver package: " +
         if (GpuDriverHelper.isBundledInUse()) "bundled MaliSX2 0.2.3" else "imported")

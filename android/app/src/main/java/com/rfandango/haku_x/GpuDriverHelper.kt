@@ -194,6 +194,9 @@ object GpuDriverHelper {
   fun detectedChip(): GpuDriverPolicy.Chip? =
     GpuDriverPolicy.chip(unisocT820Mali, unisocT618Mali, dimensity8300Mali || rg477mMali)
 
+  /** A lab run may load a different binary from the one selected in the UI. */
+  fun hasRuntimeDriverOverride(): Boolean = property("debug.hakux.vkdriver").isNotEmpty()
+
   fun canLoadDriver(meta: DriverMetadata): Boolean =
     GpuDriverPolicy.canLoadPackage(Build.VERSION.SDK_INT, meta.minApi) &&
       GpuDriverPolicy.acceptsLibrary(meta.libraryName)
