@@ -99,6 +99,7 @@ fun GameSettingsScreen(gameKey: String, title: String, onBack: () -> Unit, onOpe
     scopeLabel = stringResource(R.string.ui_scope_game),
     otherScopeLabel = stringResource(R.string.ui_scope_global), onOtherScope = onOpenGlobal,
     actions = {
+      RestartGameAction(gameKey)
       TextButton(
         onClick = { resetting = true },
         enabled = true,
@@ -109,6 +110,8 @@ fun GameSettingsScreen(gameKey: String, title: String, onBack: () -> Unit, onOpe
       ExperienceSettingsSection(selected, gameKey, autoOnly = true)
     }
     Hint(stringResource(R.string.game_settings_desc))
+    if (selected == SettingsCategory.GRAPHICS) Hint(stringResource(R.string.game_restart_graphics_hint))
+    if (selected == SettingsCategory.DISPLAY) Hint(stringResource(R.string.game_restart_fps_hint))
     SettingsGroup(selected == SettingsCategory.GRAPHICS) {
       GraphicsProfileRow(GraphicsOptions(
         values[GameSetting.RENDER_SCALE]?.toIntOrNull() ?: prefs.renderScale,

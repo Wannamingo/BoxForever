@@ -141,7 +141,10 @@ fun SettingsScreen(
     title = stringResource(R.string.settings_title), onBack = onBack, snackbar = snackbar,
     entries = GlobalSettingsIndex,
     otherScopeLabel = stringResource(R.string.ui_scope_game), onOtherScope = onGameSettings,
+    actions = { RestartGameAction() },
   ) { category ->
+    if (category == SettingsCategory.GRAPHICS) Hint(stringResource(R.string.game_restart_graphics_hint))
+    if (category == SettingsCategory.DISPLAY) Hint(stringResource(R.string.game_restart_fps_hint))
     if (category == SettingsCategory.GRAPHICS) ExperienceSettingsSection(category, autoOnly = true)
     SettingsGroup(category == SettingsCategory.APP) {
       Section(stringResource(R.string.ui_category_app))

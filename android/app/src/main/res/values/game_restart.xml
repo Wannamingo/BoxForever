@@ -1,0 +1,8 @@
+<resources>
+  <string name="game_restart">Restart</string>
+  <string name="game_restart_title">Restart game?</string>
+  <string name="game_restart_message">Restart the current game with the new settings? Unsaved progress will be lost. Game saves and emulator states will be kept.</string>
+  <string name="game_restart_unavailable">The game is no longer running or is busy with automatic calibration.</string>
+  <string name="game_restart_graphics_hint">Graphics settings are stored by the emulator, separately from save states. Resolution, FXAA, upscaling and profiles apply at the next game start. Use Restart to apply them without returning to the library.</string>
+  <string name="game_restart_fps_hint">A limit below the game’s normal frame rate can slow the emulation itself. For full-speed testing, use 120 FPS.</string>
+</resources>

@@ -93,6 +93,15 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     val originalIntent=intent
     super.onNewIntent(next)
     intent=originalIntent // A request must not replace the original disc/load-state intent.
+    if (next.getStringExtra(GameRestart.EXTRA_REQUEST) == gameKey()) {
+      if (calibration.active || calibration.trial) {
+        Toast.makeText(this, R.string.game_restart_unavailable, Toast.LENGTH_LONG).show()
+      } else {
+        Log.i(TAG, "restart requested from settings; current emulator settings will be read again")
+        restartGame()
+      }
+      return
+    }
     if(next.getStringExtra(GameCalibration.EXTRA_REQUEST)==gameKey()) calibrationRequested=true
   }
 
@@ -288,6 +297,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
   private fun restartGame() {
     if (relaunchStarted) return
     relaunchStarted = true
+    Log.i(TAG, "restart: cold start of the current disc with current settings; no savestate")
     RelaunchActivity.heldFrame(this).delete()
     startActivity(
       Intent(this, RelaunchActivity::class.java)
@@ -875,6 +885,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
           putExtra(LauncherActivity.EXTRA_SETTINGS_GAME_TITLE, title)
         })
       },
+      getString(R.string.game_restart) to ::confirmRestartGame,
       getString(R.string.overlay_menu_edit) to ::editControls,
       getString(if (shown) R.string.overlay_menu_hide else R.string.overlay_menu_show) to {
         controlsShown = !shown
@@ -914,6 +925,18 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
           nativeSetPostShaderControls(com.rfandango.haku_x.data.PostShaders.controls(store.effective(game)))
         }.onFailure { android.widget.Toast.makeText(this, R.string.extra_save_failed, android.widget.Toast.LENGTH_LONG).show() }
       }.setNegativeButton(android.R.string.cancel, null))
+  }
+
+  private fun confirmRestartGame() {
+    if (calibration.active || calibration.trial || relaunchStarted) {
+      Toast.makeText(this, R.string.game_restart_unavailable, Toast.LENGTH_LONG).show()
+      return
+    }
+    showMenuDialog(AlertDialog.Builder(this)
+      .setTitle(R.string.game_restart_title)
+      .setMessage(R.string.game_restart_message)
+      .setPositiveButton(R.string.game_restart) { _, _ -> restartGame() }
+      .setNegativeButton(android.R.string.cancel, null))
   }
 
   /** The players the core has a controller plugged in for (bit n: player n + 1). */
