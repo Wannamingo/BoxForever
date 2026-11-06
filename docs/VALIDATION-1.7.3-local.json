@@ -1,0 +1,122 @@
+{
+  "status": "PASS_SCOPED_LOCAL_CANDIDATE_NOT_PUBLISHED",
+  "date": "2026-11-06",
+  "version": "1.7.3",
+  "versionCode": 33,
+  "source_commit": "cea25d62d6d853dafcf1753f0dc0f7b9183cd01c",
+  "APK_sha256": "f5eb4af9fb131e71502187651b278cb3aa1fc7feed8d84d3c6252fec92745768",
+  "unit_tests": {
+    "tests": 129,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lintVitalRelease": true,
+  "native_libraries_and_four_driver_archives_unchanged": true,
+  "devices": [
+    {
+      "device": "RG476H",
+      "serial": "RG476H02065036",
+      "in_place_install": true,
+      "automatic_ROP_exception": true,
+      "current_settings": "2x / FXAA / GSR / 120 FPS limit",
+      "original_selected_P77_ELF_loaded": true,
+      "PB_present_request_FPS": 29.910269192422735,
+      "measurement_seconds": 20.06,
+      "preservation": {
+        "code33_APK": "f5eb4af9fb131e71502187651b278cb3aa1fc7feed8d84d3c6252fec92745768",
+        "original_selected_driver_exact": true,
+        "settings_values_preserved": true,
+        "original_state_payloads_exact": true,
+        "old_user_data_not_cleared": true
+      },
+      "evidence": {
+        "after-install.json": "c0ba9a1e4f18c63c0110c69c218751a557685964ca0a7d282d9f202dcc9f9142",
+        "automatic-fresh-startup.json": "1654942c14b56043a095995121640c0de570aadfd277efae9c5eac9eeb339fdc",
+        "automatic-fresh-fps.json": "159af11d25be8e2005dc83918d2ba82c4ce44b5ed99f786ec2ff165e21be06bf",
+        "preservation.json": "36638865424dfa9b517b1b7949182f32d38d4ef6f46f4b4d8ea24ba5268c1d97"
+      }
+    },
+    {
+      "device": "RG477M",
+      "serial": "RG477M01025672",
+      "in_place_install": true,
+      "automatic_ROP_exception": false,
+      "current_settings": "2x / FXAA / GSR / 120 FPS limit",
+      "original_selected_P77_ELF_loaded": true,
+      "PB_present_request_FPS": 59.930139720558884,
+      "measurement_seconds": 20.04,
+      "preservation": {
+        "code33_APK": "f5eb4af9fb131e71502187651b278cb3aa1fc7feed8d84d3c6252fec92745768",
+        "original_selected_driver_exact": true,
+        "settings_values_preserved": true,
+        "original_state_payloads_exact": true,
+        "old_user_data_not_cleared": true
+      },
+      "evidence": {
+        "after-install.json": "7db1c2f15228d0a87bc97d23dc46701843f5715ade66372999960738d6e00a31",
+        "g615-regression-startup.json": "d825f689cd21cb1b5997abaa49edb384bfe33f0732308ea869e659f23b7da3bf",
+        "g615-regression-fps.json": "0ba031e003fab61b25f90273f1e39742dc403ecb2a1d8c248842df416f4cf4f1",
+        "preservation.json": "36638865424dfa9b517b1b7949182f32d38d4ef6f46f4b4d8ea24ba5268c1d97"
+      }
+    }
+  ],
+  "restart_button": {
+    "available_in_pause_and_settings": true,
+    "code32_full_two_device_UI_matrix_preserved": true,
+    "code33_settings_confirmation_and_cold_restart_verified": true,
+    "PID_transition": {
+      "old_PID": "4069",
+      "new_PID": "5105",
+      "cold_restart": true
+    },
+    "new_process_uses_current_graphics": true,
+    "does_not_automatically_load_state": true,
+    "original_slot1_restored_after_test": true,
+    "repeated_automatic_exception_PB_request_FPS": 29.92047713717694
+  },
+  "comparison": {
+    "game": "Need for Speed Most Wanted Black Edition",
+    "game_key": "4541007B.7",
+    "device": "RG476H / T820",
+    "scene": "original user slot1; stationary car; changing weather/traffic",
+    "settings": "2x FXAA/GSR 120 FPS limit",
+    "baseline_default_ROP_PB_request_FPS": [
+      29.168740666998506,
+      29.226932668329177
+    ],
+    "candidate_automatic_ROP_PB_request_FPS": 29.910269192422735,
+    "HUD_speed_percent_is_snapshot_not_average": true,
+    "baseline_representative_HUD_percent": [
+      77,
+      82
+    ],
+    "candidate_representative_HUD_percent": [
+      87,
+      91
+    ],
+    "complete_frame_timing_or_p99_not_measured": true,
+    "moving_race_performance_not_proven": true,
+    "full_100_percent_speed_not_claimed": true,
+    "system_driver_remains_faster_at_2x": true
+  },
+  "pixel_oracle": {
+    "status": "PASS_ROP_PIXEL_SUBSET_WITH_RETAINED_VENDOR_BACKGROUND",
+    "cases": 32,
+    "checks": 6298704,
+    "source_evidence_sha256": "eee4b6483df30aff0d63a892577a720de382fc3ed7cffda954ec81ecaaafe23f",
+    "retained_foreign_vendor_CPU_register_dump_context": true,
+    "whole_system_stability_or_clean_ROM_not_claimed": true
+  },
+  "scope": {
+    "title_and_version": "4541007B.7 only",
+    "detected_chip": "UNISOC_T820",
+    "exact_ELF": "53d01a562e504782154a5cddbcc55bcd079f2038260bca08ea6885d835562006",
+    "explicit_env_and_debug_driver_overrides_keep_authority": true,
+    "other_games_drivers_G615_T618_keep_defaults": true,
+    "RG556_not_physically_tested": true
+  },
+  "no_full_userdata_or_HDD_backup": true,
+  "no_game_resource_edits": true,
+  "GitHub_published": false
+}
