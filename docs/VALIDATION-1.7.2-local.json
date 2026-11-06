@@ -1,0 +1,48 @@
+{
+  "status": "PASS_LOCAL_RESTART_UI_CODE32_TWO_DEVICES_NOT_PUBLISHED",
+  "date": "2026-11-06",
+  "version": "1.7.2",
+  "versionCode": 32,
+  "APK_sha256": "f3d0761c795048f5c1ca84d9b824c9f6808bab09745456f0cfef7767b1b3a583",
+  "source_build_commit": "373047f35623dd6a6507a289301ef37ef07c5271",
+  "package": "com.rfandango.haku_x.debug",
+  "same_signing_key": true,
+  "native_and_four_driver_archives_unchanged_from_1_7_1": true,
+  "tests": {
+    "tests": 122,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lintVitalRelease": true,
+  "devices": [
+    {
+      "device": "RG477M",
+      "in_place_install": true,
+      "pause_restart_cancel_and_confirm": true,
+      "per_game_settings_restart_to1x": true,
+      "global_settings_restart_to2x": true,
+      "restart_hidden_without_game": true,
+      "cold_restart_does_not_resume_state": true,
+      "settings_and_states_preserved": true,
+      "final_state": "idle"
+    },
+    {
+      "device": "RG476H",
+      "in_place_install": true,
+      "settings_restart_cancel_and_confirm": true,
+      "current_2x_FXAA_GSR_120_applied": true,
+      "cold_restart_does_not_resume_state": true,
+      "slot1_reloaded_through_in_game_menu": true,
+      "slot1_payload_unchanged": true,
+      "settings_and_states_preserved": true,
+      "final_state": "race running with selected P77r1 and user Quality profile"
+    }
+  ],
+  "restart_begins_game_from_start": true,
+  "confirmation_warns_about_unsaved_progress": true,
+  "temporary_GPU_diagnostic_overrides_restored": true,
+  "no_full_userdata_or_HDD_backup": true,
+  "GitHub_published": false,
+  "driver_performance_issue_at_2x_not_claimed_fixed": true
+}
