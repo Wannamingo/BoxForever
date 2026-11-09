@@ -333,7 +333,7 @@ static void tail(Buf *bp, const HleVshKey *k, bool fogw)
     } else {
         put(&b, "  vFog = %s;\n", k->fog_table ? "0.0" : "1.0");
     }
-    put(&b, "  gl_PointSize = max(oPts.x, 1.0) * float(max((pc.flags >> 16) & 255u, 1u));\n"
+    put(&b, "  gl_PointSize = max(oPts.x, 1.0) * (0.5 * float(max((pc.flags >> 16) & 255u, 2u)));\n"
             /* screen space -> clip space (the NV2A rasterizer's subpixel
              * placement, ff.h) */
             "  float w = oPos.w;\n"

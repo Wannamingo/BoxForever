@@ -2,6 +2,7 @@
 #include "native/core/movie.h"
 #include "native/core/movie_policy.h"
 #include "hw/xbox/hle/vk/dynamic_policy.h"
+#include "hw/xbox/hle/vk/render_scale.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -86,6 +87,24 @@ int main(void)
     assert(hle_dynamic_window(&drs,18,20,.9,true,2,1,2,30)==1); /* upscale missed target: rollback */
     hle_dynamic_reset(&drs,0);
     for(unsigned i=10;i<30;i++)assert(hle_dynamic_window(&drs,i,60,.6,true,1,1,2,60)==1); /* no projected headroom */
+    hle_dynamic_reset(&drs, 0);
+    for (unsigned i = 10; i < 12; i++) {
+        assert(hle_dynamic_window(&drs, i, 30, .99, true, 4, 2, 4, 60) == 4);
+    }
+    assert(hle_dynamic_window(&drs, 12, 30, .99, true, 4, 2, 4, 60) == 3);
+    const char *end;
+    assert(hle_scale_parse("1.5,2", &end) == 3 && *end == ',');
+    assert(hle_scale_parse("4", &end) == 8 && !*end);
+    assert(!hle_scale_parse("4.5", &end));
+    assert(hle_scale_edge(640, 3) == 960 && hle_scale_edge(480, 5) == 1200);
+    assert(hle_scale_edge(-1, 3) == -2);
+    for (unsigned scale = HLE_SCALE_NATIVE; scale <= HLE_SCALE_MAX; scale++) {
+        for (unsigned edge = 0; edge < 65; edge++) {
+            const uint32_t scaled = hle_scale_edge(edge, scale);
+            assert(hle_scale_guest_extent(scaled, scale) == edge);
+            assert((uint32_t)hle_scale_edge(edge + 1, scale) > scaled);
+        }
+    }
     puts("PASS: filter, movie metadata/lifetime, DRS warmup, CPU-bound rollback, hysteresis and headroom policies");
     return 0;
 }

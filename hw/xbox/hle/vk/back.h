@@ -89,6 +89,7 @@ bool hle_back_movie_tracking_on(void);
 uint64_t hle_back_movie_status(void);
 /* Live request, consumed at a render frame boundary. min=0 disables DRS.
  * Bounded 1x..2x, target 30/60/90/120; original startup scale retained. */
+/* min and max in half steps, or min=0 to turn dynamic resolution off. */
 void hle_back_set_dynamic(unsigned min,unsigned max,unsigned target);
 
 

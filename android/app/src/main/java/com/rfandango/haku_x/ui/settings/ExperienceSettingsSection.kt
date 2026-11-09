@@ -116,7 +116,7 @@ internal fun ColumnScope.ExperienceSettingsSection(category: SettingsCategory, g
             headlineContent = { Text(title) }, supportingContent = { Text(
               (if (inherited) stringResource(R.string.exp_inherited) + " " else "") +
                 if(field==ExperienceSetting.DYNAMIC_TARGET) "$value FPS"
-                else if(field==ExperienceSetting.DYNAMIC_MIN||field==ExperienceSetting.DYNAMIC_MAX) "${value}×"
+                else if(field==ExperienceSetting.DYNAMIC_MIN||field==ExperienceSetting.DYNAMIC_MAX) scaleLabel(RenderScale.dynamicScale(value))
                 else if(field==ExperienceSetting.POST_SHADER) stringResource(PostShaders.label(value))+" · "+stringResource(R.string.shader_desc)
                 else if(field==ExperienceSetting.MOVIE_ASPECT) stringResource(movieLabel(value))+" · "+stringResource(R.string.renderer_movie_desc)
                 else if(field==ExperienceSetting.HUD_REFERENCE_FPS)
@@ -156,8 +156,10 @@ internal fun ColumnScope.ExperienceSettingsSection(category: SettingsCategory, g
   }
   choosing?.let { field ->
     val values = if(field==ExperienceSetting.DYNAMIC_TARGET) listOf(30,60,90,120)
-    else if(field==ExperienceSetting.DYNAMIC_MIN) listOf(1,2)
-    else if(field==ExperienceSetting.DYNAMIC_MAX) (effective[ExperienceSetting.DYNAMIC_MIN]..2).toList()
+    else if(field==ExperienceSetting.DYNAMIC_MIN) RenderScale.dynamicChoices
+    else if(field==ExperienceSetting.DYNAMIC_MAX) RenderScale.dynamicChoices.filter {
+      RenderScale.dynamicSteps(it) >= RenderScale.dynamicSteps(effective[ExperienceSetting.DYNAMIC_MIN])
+    }
     else if(field==ExperienceSetting.POST_SHADER) (0..4).toList()
     else if(field==ExperienceSetting.MOVIE_ASPECT) listOf(0,1,2,3)
     else if(field==ExperienceSetting.HUD_REFERENCE_FPS) EmulationSpeed.referenceRates
@@ -171,7 +173,7 @@ internal fun ColumnScope.ExperienceSettingsSection(category: SettingsCategory, g
     ChoiceDialog(title = stringResource(experienceLabel(field)), options =
       (if (gameKey != null) listOf<Int?>(null) else emptyList()) .map { it to stringResource(R.string.extra_picture_use_global_value) } +
         values.map { it as Int? to if(field==ExperienceSetting.DYNAMIC_TARGET) "$it FPS"
-          else if(field==ExperienceSetting.DYNAMIC_MIN||field==ExperienceSetting.DYNAMIC_MAX) "${it}×"
+          else if(field==ExperienceSetting.DYNAMIC_MIN||field==ExperienceSetting.DYNAMIC_MAX) scaleLabel(RenderScale.dynamicScale(it))
           else if(field==ExperienceSetting.POST_SHADER) stringResource(PostShaders.label(it))
           else if(field==ExperienceSetting.MOVIE_ASPECT) stringResource(movieLabel(it))
           else if(field==ExperienceSetting.HUD_REFERENCE_FPS) (if(it==0) stringResource(R.string.hud_reference_none) else "$it FPS")

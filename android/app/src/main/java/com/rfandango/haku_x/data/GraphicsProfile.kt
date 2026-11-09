@@ -1,7 +1,10 @@
 package com.rfandango.haku_x.data
 
 /** A preset touches these four settings only; video modes, drivers and game fixes are independent. */
-data class GraphicsOptions(val scale: Int, val fxaa: Boolean, val upscale: String, val fpsLimit: Int)
+data class GraphicsOptions(val scale: Float, val fxaa: Boolean, val upscale: String, val fpsLimit: Int) {
+  constructor(scale: Int, fxaa: Boolean, upscale: String, fpsLimit: Int) :
+    this(scale.toFloat(), fxaa, upscale, fpsLimit)
+}
 
 internal fun effectiveFpsLimit(override: String?, global: Int): Int =
   override?.toIntOrNull()?.takeIf { it in 0..240 } ?: global.coerceIn(0, 240)

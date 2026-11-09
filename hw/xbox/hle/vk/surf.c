@@ -81,7 +81,7 @@ static uint32_t surf_scale_at(const HleSurfDesc *d,VkImageAspectFlags aspect,uin
     bool small = !d->role && !d->pitch && !d->parent && d->levels <= 1 && d->faces <= 1 &&
                  (aspect & VK_IMAGE_ASPECT_COLOR_BIT) &&
                  MAX(d->w, d->h) <= SURF_UNSCALED_MAX;
-    return small ? 1 : scale;
+    return small ? HLE_SCALE_NATIVE : scale;
 }
 
 static uint32_t surf_scale(const HleSurfDesc *d,VkImageAspectFlags aspect)
@@ -277,8 +277,8 @@ HleVkSurf *hle_surf_define(const HleSurfDesc *d)
             s->d = *d;
             s->fmt = surf_format(d->xfmt, &s->aspect, &s->texel_bytes);
             s->scale = surf_scale(d, s->aspect);
-            s->w = d->w * s->scale;
-            s->h = d->h * s->scale;
+            s->w = hle_scale_edge(d->w, s->scale);
+            s->h = hle_scale_edge(d->h, s->scale);
             s->layout = VK_IMAGE_LAYOUT_UNDEFINED;
             s->general = d->parent || owner_kind(d);
             s->nlevels = s->nfaces = 1;
@@ -646,7 +646,7 @@ static void resize_free_vk(HleVkSurf *s)
 
 bool hle_surf_rescale(uint32_t scale,uint32_t display_w,uint32_t display_h)
 {
-    if(g_rec_open || scale<1 || scale>4 || !display_w || !display_h || hle_vk_lost())return false;
+    if(g_rec_open || scale<HLE_SCALE_NATIVE || scale>HLE_SCALE_MAX || !display_w || !display_h || hle_vk_lost())return false;
     HleVkSurf *next=g_new0(HleVkSurf,HLE_MAX_VK_SURF);
     bool changed[HLE_MAX_VK_SURF]={0},blit[HLE_MAX_VK_SURF]={0};
     HleScaleCopy scratch={0};VkDeviceSize scratch_bytes=0;
@@ -659,7 +659,10 @@ bool hle_surf_rescale(uint32_t scale,uint32_t display_w,uint32_t display_h)
         uint32_t factor=surf_scale_at(&s->d,s->aspect,scale);
         if(factor==s->scale)continue;
         changed[i]=true;next[i]=*s;
-        HleVkSurf *n=&next[i];n->scale=factor;n->w=s->d.w*factor;n->h=s->d.h*factor;
+        HleVkSurf *n = &next[i];
+        n->scale = factor;
+        n->w = hle_scale_edge(s->d.w, factor);
+        n->h = hle_scale_edge(s->d.h, factor);
         n->img=n->owner_img=VK_NULL_HANDLE;n->mem=VK_NULL_HANDLE;
         n->view=n->sview=n->oview=n->zr_depth=n->zr_stencil=n->cube_view=VK_NULL_HANDLE;
         n->sview_levels=n->oview_levels=0;n->zr_gen=0;n->rec_gen=0;
@@ -728,7 +731,8 @@ bool hle_surf_rescale(uint32_t scale,uint32_t display_w,uint32_t display_h)
          * process owns them until Android tears down its Vulkan device. */
         hle_vk_lose(r,"vkWaitForFences (resolution copy)");g_free(next);return false;
     }
-    if(hle_disp_init(display_w*scale,display_h*scale,display_w,display_h))goto fail;
+    if (hle_disp_init(hle_scale_edge(display_w, scale), hle_scale_edge(display_h, scale),
+                      display_w, display_h)) goto fail;
     /* Invalidate child views before freeing their owners. */
     for(unsigned i=0;i<HLE_MAX_VK_SURF;i++) {
         HleVkSurf *v=&g_surf[i];if(!v->alive||!v->d.parent||v->destroy_after)continue;
@@ -742,7 +746,8 @@ bool hle_surf_rescale(uint32_t scale,uint32_t display_w,uint32_t display_h)
         resize_free_vk(&g_surf[i]);g_surf[i]=next[i];memset(&next[i],0,sizeof(next[i]));
     }
     g_surf_gen++;g_hle_rscale=scale;hle_draw_state_lost();
-    hle_log("hakuX-hle-back","dynamic resolution: preserved %u images; scale %ux, depth scratch %llu bytes",copied,scale,(unsigned long long)scratch_bytes);
+    hle_log("hakuX-hle-back", "dynamic resolution: preserved %u images; scale %gx, depth scratch %llu bytes",
+            copied, scale * 0.5, (unsigned long long)scratch_bytes);
     T.vkDestroyFence(g_hvk.dev,fence,NULL);T.vkDestroyCommandPool(g_hvk.dev,pool,NULL);
     hle_scale_copy_free(&scratch);g_free(next);return true;
 fail:

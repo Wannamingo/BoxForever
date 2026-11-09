@@ -58,7 +58,8 @@ class AppPrefs(context: Context) {
 
   fun applyGraphicsProfile(profile: GraphicsProfile) = sp.edit {
     val options = profile.options
-    putInt(NativeCoreActivity.PREF_SCALE, options.scale)
+    putInt(NativeCoreActivity.PREF_SCALE, options.scale.toInt())
+    remove("render_scale_fraction")
     putBoolean(NativeCoreActivity.PREF_FXAA, options.fxaa)
     putString(NativeCoreActivity.PREF_UPSCALE, options.upscale)
     putInt("frame_rate_limit", options.fpsLimit)
@@ -94,9 +95,17 @@ class AppPrefs(context: Context) {
     set(value) = sp.edit { putBoolean(NativeCoreActivity.PREF_SHOW_HITCHES, value) }
 
   /** The HLE GPU's render scale, 1-4x the title's resolution (read at game start). */
-  var renderScale: Int
-    get() = sp.getInt(NativeCoreActivity.PREF_SCALE, NativeCoreActivity.DEFAULT_SCALE)
-    set(value) = sp.edit { putInt(NativeCoreActivity.PREF_SCALE, value) }
+  var renderScale: Float
+    get() = sp.getFloat("render_scale_fraction", 0f).takeIf { it in RenderScale.choices }
+      ?: sp.getInt(NativeCoreActivity.PREF_SCALE, NativeCoreActivity.DEFAULT_SCALE).coerceIn(1, 4).toFloat()
+    set(value) {
+      require(value in RenderScale.choices)
+      sp.edit {
+        putInt(NativeCoreActivity.PREF_SCALE, value.toInt())
+        if (value == value.toInt().toFloat()) remove("render_scale_fraction")
+        else putFloat("render_scale_fraction", value)
+      }
+    }
 
   /** The picture's shape: auto, 4:3, 16:9 or stretch (read at game start). */
   var aspectRatio: String

@@ -347,7 +347,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
       args += "uncap"
     }
     /* The HLE GPU's render scale, 1-4x the title's resolution. */
-    args += "scale=${automatic?.scale ?: settings.renderScale}"
+    args += "scale=${com.rfandango.haku_x.data.RenderScale.format(automatic?.scale ?: settings.renderScale)}"
     /* The picture's shape: auto (the game's), 4:3, 16:9 or stretch. */
     args += "aspect=${settings.aspectRatio}"
     /* Anti-aliasing: FXAA over each frame, and how a picture smaller than

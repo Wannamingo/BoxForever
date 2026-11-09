@@ -67,7 +67,7 @@ class GameOverrides(context: Context, val game: String) {
 
   fun applyGraphicsProfile(profile: GraphicsProfile) = sp.edit {
     val options = profile.options
-    putString(key(GameSetting.RENDER_SCALE), options.scale.toString())
+    putString(key(GameSetting.RENDER_SCALE), RenderScale.format(options.scale))
     putString(key(GameSetting.FXAA), options.fxaa.toString())
     putString(key(GameSetting.UPSCALE), options.upscale)
     putString(key(GameSetting.FPS_LIMIT), options.fpsLimit.toString())
@@ -99,7 +99,7 @@ class RunSettings(private val app: AppPrefs, private val game: GameOverrides?) {
 
   val uncapped get() = bool(GameSetting.UNCAPPED, app.uncapped)
   val frameRateLimit get() = effectiveFpsLimit(game?.get(GameSetting.FPS_LIMIT), app.frameRateLimit)
-  val renderScale get() = game?.get(GameSetting.RENDER_SCALE)?.toIntOrNull() ?: app.renderScale
+  val renderScale get() = RenderScale.parse(game?.get(GameSetting.RENDER_SCALE)) ?: app.renderScale
   val asyncShaders get() = bool(GameSetting.ASYNC_SHADERS, app.asyncShaders)
   val prebuildShaders get() = bool(GameSetting.PREBUILD_SHADERS, app.prebuildShaders)
   val aspectRatio get() = text(GameSetting.ASPECT, app.aspectRatio)

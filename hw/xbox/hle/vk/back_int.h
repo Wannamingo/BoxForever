@@ -7,6 +7,7 @@
 
 #include "hw/xbox/hle/vk/vkdev.h"
 #include "hw/xbox/hle/vk/back.h"
+#include "hw/xbox/hle/vk/render_scale.h"
 #include "hw/xbox/hle/front/cmd.h"
 
 /* timeline.c */
@@ -25,9 +26,8 @@ uint64_t hle_tl_queue_ns(void);
  * (hle_tl_gap, back.h). */
 void hle_tl_gap_serve(void);
 
-/* Resolution scale (the surface_scale setting, 1-4, read at DEVICE_CREATE):
- * every render target and depth surface is rendered at d.w * scale by
- * d.h * scale. Guest-facing values stay in guest pixels (D3D viewports,
+/* Resolution scale in half steps (2-8, read at DEVICE_CREATE).
+ * Render-target extents use hle_scale_edge. Guest-facing values stay in guest pixels (D3D viewports,
  * clear rects, readbacks, visibility counts) and are converted where the
  * image is used. */
 extern uint32_t g_hle_rscale;
@@ -40,7 +40,7 @@ typedef struct HleVkSurf {
     uint32_t id;
     HleSurfDesc d;
     uint32_t w, h;              /* image extent (views: their level's), scaled */
-    uint32_t scale;             /* host pixels per guest pixel (hle_surf_define) */
+    uint32_t scale;             /* twice the host pixels per guest pixel */
     VkFormat fmt;
     VkImageAspectFlags aspect;
     uint32_t texel_bytes;

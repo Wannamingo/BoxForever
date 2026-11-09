@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.rfandango.haku_x.BuildConfig
@@ -33,6 +35,7 @@ import com.rfandango.haku_x.R
 import com.rfandango.haku_x.data.AppPrefs
 import com.rfandango.haku_x.data.Logs
 import com.rfandango.haku_x.data.PreviousVersion
+import com.rfandango.haku_x.data.RenderScale
 import com.rfandango.haku_x.data.Storage
 import com.rfandango.haku_x.data.Updates
 import com.rfandango.haku_x.ui.common.ActionItem
@@ -82,7 +85,7 @@ fun SettingsScreen(
   val hudPreferences = remember { com.rfandango.haku_x.data.HudPreferences(context) }
   var showFps by remember { mutableStateOf(hudPreferences.read(prefs.showFps).enabled) }
   var showHitches by remember { mutableStateOf(prefs.showHitches) }
-  var scale by remember { mutableIntStateOf(prefs.renderScale) }
+  var scale by remember { mutableFloatStateOf(prefs.renderScale) }
   var aspect by remember { mutableStateOf(prefs.aspectRatio) }
   var fxaa by remember { mutableStateOf(prefs.fxaa) }
   var upscale by remember { mutableStateOf(prefs.upscaleFilter) }
@@ -378,7 +381,7 @@ fun SettingsScreen(
           headlineContent = { Text(stringResource(R.string.settings_scale)) },
           supportingContent = {
             Text(
-              stringResource(R.string.settings_scale_value, scale) + ". " +
+              stringResource(R.string.settings_scale_value, scaleNumber(scale)) + ". " +
                 stringResource(R.string.settings_applies_next_start)
             )
           },
@@ -584,7 +587,7 @@ fun SettingsScreen(
   if (scaleDialog) {
     ChoiceDialog(
       title = stringResource(R.string.settings_scale),
-      options = SCALES.map { it to scaleLabel(it) },
+      options = RenderScale.choices.map { it to scaleLabel(it) },
       current = scale,
       onPick = { scale = it; prefs.renderScale = it; scaleDialog = false },
       onDismiss = { scaleDialog = false },
@@ -625,7 +628,6 @@ private fun themeLabel(value: String) = when (value) {
 }
 
 /** The render scales: native, then 2x to 4x. */
-internal val SCALES = (1..4).toList()
 
 internal val FRAME_LIMITS = listOf(0, 30, 60, 90, 120)
 
@@ -634,7 +636,15 @@ internal fun fpsLimitLabel(value: Int) = if (value == 0) stringResource(R.string
   else stringResource(R.string.settings_fps_value, value)
 
 @Composable
-internal fun scaleLabel(value: Int) = if (value == 1) stringResource(R.string.settings_scale_native) else "${value}x"
+internal fun scaleLabel(value: Float): String = if (value == 1f) {
+  stringResource(R.string.settings_scale_native)
+} else {
+  scaleNumber(value) + "×"
+}
+
+@Composable
+private fun scaleNumber(value: Float) =
+  java.text.NumberFormat.getNumberInstance(LocalConfiguration.current.locales[0]).format(value)
 
 internal val ASPECTS = listOf("auto", "4:3", "16:9", "stretch")
 

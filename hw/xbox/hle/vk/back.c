@@ -37,7 +37,7 @@ static unsigned g_dynamic_config;
 static unsigned g_dynamic_scene_draws;
 void hle_back_set_dynamic(unsigned min,unsigned max,unsigned target)
 {
-    if(min) { min=MIN(MAX(min,1),2);max=MIN(MAX(max,min),2);
+    if(min) { min=MIN(MAX(min,HLE_SCALE_NATIVE),HLE_SCALE_DYNAMIC_MAX);max=MIN(MAX(max,min),HLE_SCALE_DYNAMIC_MAX);
         if(target!=30&&target!=60&&target!=90&&target!=120)target=60; }
     __atomic_store_n(&g_dynamic_config,min?min|(max<<3)|(target<<6):0,__ATOMIC_RELEASE);
 }
@@ -229,7 +229,7 @@ static void cmd_vis_end(const HleCmdVis *c)
     p->index = c->index;
     HleVkSurf *vrt = hle_surf_get(g_back.rt);
     uint32_t vsc = vrt ? vrt->scale : g_hle_rscale;
-    p->div = MAX(c->div, 1u) * vsc * vsc;               /* guest pixels */
+    p->div = MAX(c->div, 1u) * vsc * vsc;               /* four times the guest-pixel area */
     p->report = c->report;
     p->expect = c->expect;
     p->nparts = g_vis.nparts;
@@ -275,7 +275,7 @@ static void vis_reap(uint64_t completed)
                 complete = false;
             }
         }
-        uint32_t count = hle_vis_result(sum, p->div, complete);
+        uint32_t count = hle_vis_result(sum > UINT64_MAX / 4 ? UINT64_MAX : sum * 4, p->div, complete);
         {   /* debug: HAKUX_HLE_VISALL=1 (or debug.hakux.visall=1, live)
              * reports every test fully visible; HAKUX_HLE_VISLOG=<n> (or a new
              * debug.hakux.vislog=<n>) logs the next n results */
@@ -961,11 +961,11 @@ static void flush_idle(void)
     hle_vk_check(r, "vkQueueWaitIdle");
 }
 
-uint32_t g_hle_rscale = 1;
+uint32_t g_hle_rscale = HLE_SCALE_NATIVE;
 
 static void cmd_device(const HleCmdDevice *c, bool reset)
 {
-    uint32_t scale = MIN(MAX(hle_host_render_scale(), 1), 4);
+    uint32_t scale = MIN(MAX(hle_host_render_scale(), HLE_SCALE_NATIVE), HLE_SCALE_MAX);
     unsigned dynamic=__atomic_load_n(&g_dynamic_config,__ATOMIC_ACQUIRE);
     if(dynamic)scale=reset?g_hle_rscale:MIN(MAX(scale,dynamic&7),(dynamic>>3)&7);
     /* A Reset replaces only the device's surfaces (the front end destroys the
@@ -984,10 +984,11 @@ static void cmd_device(const HleCmdDevice *c, bool reset)
     g_back.disp_w = c->disp_w;
     g_back.disp_h = c->disp_h;
     g_back.present_id = c->present_id;
-    hle_disp_init(c->disp_w * scale, c->disp_h * scale, c->disp_w, c->disp_h);
-    hle_log("hakuX-hle-back", "DEVICE_%s %ux%u surfaces=%u present=%u scale=%u",
+    hle_disp_init(hle_scale_edge(c->disp_w, scale), hle_scale_edge(c->disp_h, scale),
+                  c->disp_w, c->disp_h);
+    hle_log("hakuX-hle-back", "DEVICE_%s %ux%u surfaces=%u present=%u scale=%g",
             reset ? "RESET" : "CREATE", c->disp_w, c->disp_h, c->nsurf, c->present_id,
-            scale);
+            scale * 0.5);
 }
 
 /* ---- debug: render-target dump (debug.hakux.rtdump) ---------------------- */
@@ -1304,9 +1305,10 @@ static void pix_after(const HleCmdDraw *c)
         return;
     }
     /* the texel, and the pixel of the target's image */
-    uint32_t sc = rt->scale, gx = g_pix.host ? g_pix.x / sc : g_pix.x;
-    uint32_t gy = g_pix.host ? g_pix.y / sc : g_pix.y;
-    uint32_t px = g_pix.host ? g_pix.x : g_pix.x * sc, py = g_pix.host ? g_pix.y : g_pix.y * sc;
+    uint32_t sc = rt->scale, gx = g_pix.host ? hle_scale_guest_extent(g_pix.x, sc) : g_pix.x;
+    uint32_t gy = g_pix.host ? hle_scale_guest_extent(g_pix.y, sc) : g_pix.y;
+    uint32_t px = g_pix.host ? g_pix.x : hle_scale_edge(g_pix.x, sc);
+    uint32_t py = g_pix.host ? g_pix.y : hle_scale_edge(g_pix.y, sc);
     if ((g_pix.id && g_back.rt != g_pix.id) || gx >= rt->d.w || gy >= rt->d.h) {
         return;
     }
@@ -1666,10 +1668,10 @@ static bool clear_masked(const HleCmdClear *c, HleVkSurf *rt, HleVkSurf *ds, uin
     for (uint32_t i = 0; i < MAX(c->nrects, 1u) && i < HLE_CMD_MAX_RECTS; i++) {
         VkRect2D r = { { 0, 0 }, { w, h } };
         if (c->nrects) {
-            int32_t x1 = MAX(c->rect[i].x1 * (int32_t)sc, 0);
-            int32_t y1 = MAX(c->rect[i].y1 * (int32_t)sc, 0);
-            int32_t x2 = MIN(c->rect[i].x2 * (int32_t)sc, (int32_t)w);
-            int32_t y2 = MIN(c->rect[i].y2 * (int32_t)sc, (int32_t)h);
+            int32_t x1 = MAX(hle_scale_edge(c->rect[i].x1, sc), 0);
+            int32_t y1 = MAX(hle_scale_edge(c->rect[i].y1, sc), 0);
+            int32_t x2 = MIN(hle_scale_edge(c->rect[i].x2, sc), (int32_t)w);
+            int32_t y2 = MIN(hle_scale_edge(c->rect[i].y2, sc), (int32_t)h);
             if (x2 <= x1 || y2 <= y1) {
                 continue;
             }
@@ -1767,16 +1769,17 @@ static void cmd_clear(const HleCmdClear *c)
         na++;
     }
     uint32_t w = rt ? rt->w : ds->w, h = rt ? rt->h : ds->h;
-    int32_t sc = (int32_t)(rt ? rt->scale : ds->scale);
+    uint32_t sc = rt ? rt->scale : ds->scale;
     VkClearRect rects[HLE_CMD_MAX_RECTS];
     uint32_t nr = 0;
     if (c->nrects == 0) {
         rects[nr++] = (VkClearRect){ { { 0, 0 }, { w, h } }, 0, 1 };
     }
     for (uint32_t i = 0; i < c->nrects && i < HLE_CMD_MAX_RECTS; i++) {
-        int32_t x1 = MAX(c->rect[i].x1 * sc, 0), y1 = MAX(c->rect[i].y1 * sc, 0);
-        int32_t x2 = MIN(c->rect[i].x2 * sc, (int32_t)w);
-        int32_t y2 = MIN(c->rect[i].y2 * sc, (int32_t)h);
+        int32_t x1 = MAX(hle_scale_edge(c->rect[i].x1, sc), 0);
+        int32_t y1 = MAX(hle_scale_edge(c->rect[i].y1, sc), 0);
+        int32_t x2 = MIN(hle_scale_edge(c->rect[i].x2, sc), (int32_t)w);
+        int32_t y2 = MIN(hle_scale_edge(c->rect[i].y2, sc), (int32_t)h);
         if (x2 > x1 && y2 > y1) {
             rects[nr++] = (VkClearRect){ { { x1, y1 },
                                            { (uint32_t)(x2 - x1), (uint32_t)(y2 - y1) } },
@@ -1995,10 +1998,11 @@ static void dynamic_frame(const HleCmdSwap *c,unsigned scene)
     unsigned want=g_hle_rscale;
     if(change) {
         config=requested;failed=false;hle_tl_queue_measure(config!=0);
-        want=config?MIN(MAX(want,config&7),(config>>3)&7):MIN(MAX(hle_host_render_scale(),1),4);
+        want=config?MIN(MAX(want,config&7),(config>>3)&7):
+            MIN(MAX(hle_host_render_scale(),HLE_SCALE_NATIVE),HLE_SCALE_MAX);
         hle_dynamic_reset(&policy,now/1e9);start=0;
-        hle_log("hakuX-hle-back","dynamic resolution: %s range %u..%u target %u; host fence queue occupancy proxy",
-            config?"on":"off",config&7,(config>>3)&7,config>>6);
+        hle_log("hakuX-hle-back","dynamic resolution: %s range %g..%g target %u; host fence queue occupancy proxy",
+            config?"on":"off",(config&7)*0.5,((config>>3)&7)*0.5,config>>6);
     }
     if(!config&&!change)return;
     if(failed)return;
@@ -2015,8 +2019,8 @@ static void dynamic_frame(const HleCmdSwap *c,unsigned scene)
         double occupancy=MIN((double)(queue-queue_start)/(now-start),1.0);
         bool eligible=frames>=20&&scene_frames*2>=frames&&!hle_back_movie_status();
         want=hle_dynamic_window(&policy,now/1e9,fps,occupancy,eligible,g_hle_rscale,config&7,(config>>3)&7,config>>6);
-        hle_log("hakuX-hle-back","dynamic sample: %ux %.1f fps queue-pending %.0f%% 3d %u/%u -> %ux",
-            g_hle_rscale,fps,occupancy*100,scene_frames,frames,want);
+        hle_log("hakuX-hle-back","dynamic sample: %gx %.1f fps queue-pending %.0f%% 3d %u/%u -> %gx",
+            g_hle_rscale*0.5,fps,occupancy*100,scene_frames,frames,want*0.5);
         start=now;frames=scene_frames=0;queue_start=queue;
     }
     if(want!=g_hle_rscale) {
@@ -2024,8 +2028,8 @@ static void dynamic_frame(const HleCmdSwap *c,unsigned scene)
         flush_idle();hle_tl_wait(c->value);hle_surf_reap(hle_tl_completed());
         if(hle_vk_lost()||!hle_surf_rescale(want,g_back.disp_w,g_back.disp_h)) {
             failed=true;hle_tl_queue_measure(false);
-            hle_log("hakuX-hle-back","dynamic resolution disabled for this process; %ux retained",old);
-        }else hle_log("hakuX-hle-back","dynamic transition: %ux -> %ux in %.1f ms",old,want,(hle_now_ns()-begin)/1e6);
+            hle_log("hakuX-hle-back","dynamic resolution disabled for this process; %gx retained",old*0.5);
+        }else hle_log("hakuX-hle-back","dynamic transition: %gx -> %gx in %.1f ms",old*0.5,want*0.5,(hle_now_ns()-begin)/1e6);
         start=0;last=hle_now_ns();
     }
 }
@@ -2176,8 +2180,8 @@ static void cmd_swap_present(const HleCmdSwap *c)
         uint32_t dw, dh;
         hle_disp_size(&dw, &dh);
         /* the part of src shown (HleCmdSwap.src_w / src_h), in its pixels */
-        const uint32_t sw = c->src_w ? MIN(src->w, c->src_w * src->scale) : src->w;
-        const uint32_t sh = c->src_h ? MIN(src->h, c->src_h * src->scale) : src->h;
+        const uint32_t sw = c->src_w ? MIN(src->w, (uint32_t)hle_scale_edge(c->src_w, src->scale)) : src->w;
+        const uint32_t sh = c->src_h ? MIN(src->h, (uint32_t)hle_scale_edge(c->src_h, src->scale)) : src->h;
         if (!g_gamma.identity && !g_gamma.off && !hle_disp_gamma_consumer() &&
             hle_gamma_pass(cb, g_back.cur, g_gamma.rgb, src, sw, sh, dst, dw, dh)) {
             overlay_blit(cb, dst, dw, dh);
@@ -2233,7 +2237,7 @@ static bool readback_arena(const HleCmdReadback *c)
     hle_surf_transition(cb, s, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     VkImage img = o->img;
     VkImageLayout il = o->general ? VK_IMAGE_LAYOUT_GENERAL : o->layout;
-    if (o->scale > 1) {                         /* the guest gets guest-size texels */
+    if (o->scale > HLE_SCALE_NATIVE) {          /* the guest gets guest-size texels */
         img = hle_surf_down(cb, o, il, level, layer, c->w, c->h);
         if (!img) {
             return false;
@@ -2297,7 +2301,7 @@ static void cmd_readback(const HleCmdReadback *c)
         hle_surf_transition(cb, s, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         VkImage img = s->img;
         VkImageLayout il = s->layout;
-        if (s->scale > 1 || w != s->d.w || h != s->d.h) {
+        if (s->scale > HLE_SCALE_NATIVE || w != s->d.w || h != s->d.h) {
             /* the guest gets guest-size pixels (or the size asked for:
              * a multisampled display persisted at display size) */
             img = hle_surf_down(cb, s, il, 0, 0, w, h);
@@ -2392,27 +2396,34 @@ static void cmd_copy(const HleCmdCopy *c)
         g_back.st.copies++;
         return;
     }
-    int32_t k = (int32_t)s->scale, kd = (int32_t)d->scale;
+    uint32_t k = s->scale, kd = d->scale;
+    bool copy = s->fmt == d->fmt && k == kd;
     uint32_t n = 0;
     for (uint32_t i = 0; i < c->nrects && i < HLE_CMD_MAX_RECTS; i++) {
         const HleRect *r = &c->rect[i];
-        int32_t w = MIN(MIN(r->x2, (int32_t)s->w / k) - r->x1, (int32_t)d->w / kd - c->x[i]);
-        int32_t h = MIN(MIN(r->y2, (int32_t)s->h / k) - r->y1, (int32_t)d->h / kd - c->y[i]);
+        int32_t w = MIN(MIN(r->x2, (int32_t)hle_scale_guest_extent(s->w, k)) - r->x1,
+                        (int32_t)hle_scale_guest_extent(d->w, kd) - c->x[i]);
+        int32_t h = MIN(MIN(r->y2, (int32_t)hle_scale_guest_extent(s->h, k)) - r->y1,
+                        (int32_t)hle_scale_guest_extent(d->h, kd) - c->y[i]);
         if (r->x1 < 0 || r->y1 < 0 || c->x[i] < 0 || c->y[i] < 0 || w <= 0 || h <= 0) {
             continue;
         }
+        int32_t sx = hle_scale_edge(r->x1, k), sy = hle_scale_edge(r->y1, k);
+        int32_t dx = hle_scale_edge(c->x[i], kd), dy = hle_scale_edge(c->y[i], kd);
+        int32_t sx2 = hle_scale_edge(r->x1 + w, k), sy2 = hle_scale_edge(r->y1 + h, k);
+        int32_t dx2 = hle_scale_edge(c->x[i] + w, kd), dy2 = hle_scale_edge(c->y[i] + h, kd);
+        copy &= sx2 - sx == dx2 - dx && sy2 - sy == dy2 - dy;
         cr[n] = (VkImageCopy2){
             .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
-            .srcSubresource = ss, .srcOffset = { r->x1 * k, r->y1 * k, 0 },
-            .dstSubresource = ds, .dstOffset = { c->x[i] * k, c->y[i] * k, 0 },
-            .extent = { (uint32_t)(w * k), (uint32_t)(h * k), 1 } };
+            .srcSubresource = ss, .srcOffset = { sx, sy, 0 },
+            .dstSubresource = ds, .dstOffset = { dx, dy, 0 },
+            .extent = { (uint32_t)(sx2 - sx), (uint32_t)(sy2 - sy), 1 } };
         br[n] = (VkImageBlit2){
             .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
             .srcSubresource = ss,
-            .srcOffsets = { { r->x1 * k, r->y1 * k, 0 }, { (r->x1 + w) * k, (r->y1 + h) * k, 1 } },
+            .srcOffsets = { { sx, sy, 0 }, { sx2, sy2, 1 } },
             .dstSubresource = ds,
-            .dstOffsets = { { c->x[i] * kd, c->y[i] * kd, 0 },
-                            { (c->x[i] + w) * kd, (c->y[i] + h) * kd, 1 } } };
+            .dstOffsets = { { dx, dy, 0 }, { dx2, dy2, 1 } } };
         n++;
     }
     if (!n) {
@@ -2422,7 +2433,7 @@ static void cmd_copy(const HleCmdCopy *c)
     hle_surf_transition(cb, s, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     hle_surf_transition(cb, d, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     hle_surf_written(d);
-    if (s->fmt == d->fmt && k == kd) {
+    if (copy) {
         VkCopyImageInfo2 ci = {
             .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
             .srcImage = s->img, .srcImageLayout = s->layout,
@@ -2453,12 +2464,13 @@ static void cmd_upload(const HleCmdUpload *c)
                       d->d.parent ? "a level or face" : !hle_surf_ensure(d) ? "no image" :
                       !(d->aspect & VK_IMAGE_ASPECT_COLOR_BIT) ? "not colour" :
                       !d->texel_bytes || c->pitch % d->texel_bytes ? "pitch" : NULL;
-    int32_t k = d ? (int32_t)MAX(d->scale, 1u) : 1, n = 0;
+    uint32_t k = d ? MAX(d->scale, (uint32_t)HLE_SCALE_NATIVE) : HLE_SCALE_NATIVE;
+    int32_t n = 0;
     VkCommandBuffer cb = why ? VK_NULL_HANDLE : cb_get();
     for (uint32_t i = 0; !why && i < c->nrects && i < HLE_CMD_MAX_RECTS; i++) {
         const HleRect *r = &c->rect[i];
-        int32_t w = MIN(r->x2 - r->x1, (int32_t)d->w / k - c->x[i]);
-        int32_t h = MIN(r->y2 - r->y1, (int32_t)d->h / k - c->y[i]);
+        int32_t w = MIN(r->x2 - r->x1, (int32_t)hle_scale_guest_extent(d->w, k) - c->x[i]);
+        int32_t h = MIN(r->y2 - r->y1, (int32_t)hle_scale_guest_extent(d->h, k) - c->y[i]);
         if (r->x1 < 0 || r->y1 < 0 || c->x[i] < 0 || c->y[i] < 0 || w <= 0 || h <= 0) {
             continue;
         }
@@ -2487,8 +2499,8 @@ static void cmd_upload(const HleCmdUpload *c)
             .srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
             .srcOffsets = { { 0, 0, 0 }, { w, h, 1 } },
             .dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-            .dstOffsets = { { c->x[i] * k, c->y[i] * k, 0 },
-                            { (c->x[i] + w) * k, (c->y[i] + h) * k, 1 } } };
+            .dstOffsets = { { hle_scale_edge(c->x[i], k), hle_scale_edge(c->y[i], k), 0 },
+                            { hle_scale_edge(c->x[i] + w, k), hle_scale_edge(c->y[i] + h, k), 1 } } };
         VkBlitImageInfo2 bi = {
             .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
             .srcImage = tmp, .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

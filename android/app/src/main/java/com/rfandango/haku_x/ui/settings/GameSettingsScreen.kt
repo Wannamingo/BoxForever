@@ -19,6 +19,7 @@ import com.rfandango.haku_x.data.AppPrefs
 import com.rfandango.haku_x.data.GameOverrides
 import com.rfandango.haku_x.data.GameSetting
 import com.rfandango.haku_x.data.GraphicsOptions
+import com.rfandango.haku_x.data.RenderScale
 import com.rfandango.haku_x.data.PictureControl
 import com.rfandango.haku_x.ui.common.ChoiceDialog
 import com.rfandango.haku_x.ui.common.ConfirmDialog
@@ -48,7 +49,8 @@ private val SECTIONS: List<Pair<Int, List<Overridable>>> = listOf(
     Overridable(GameSetting.ASPECT, R.string.settings_aspect, ASPECTS, { it.aspectRatio }, { stringResource(aspectLabel(it)) }),
   ),
   R.string.settings_section_graphics to listOf(
-    Overridable(GameSetting.RENDER_SCALE, R.string.settings_scale, SCALES.map { "$it" }, { it.renderScale.toString() }, { scaleLabel(it.toInt()) }),
+    Overridable(GameSetting.RENDER_SCALE, R.string.settings_scale, RenderScale.choices.map(RenderScale::format),
+      { RenderScale.format(it.renderScale) }, { scaleLabel(RenderScale.parse(it) ?: 1f) }),
     Overridable(GameSetting.FXAA, R.string.settings_fxaa, ON_OFF, { it.fxaa.toString() }, { onOff(it) }),
     Overridable(GameSetting.UPSCALE, R.string.settings_upscale, UPSCALERS, { it.upscaleFilter }, { stringResource(upscaleLabel(it)) }),
     Overridable(GameSetting.ASYNC_SHADERS, R.string.settings_async_shaders, ON_OFF, { it.asyncShaders.toString() }, { onOff(it) }),
@@ -114,7 +116,7 @@ fun GameSettingsScreen(gameKey: String, title: String, onBack: () -> Unit, onOpe
     if (selected == SettingsCategory.DISPLAY) Hint(stringResource(R.string.game_restart_fps_hint))
     SettingsGroup(selected == SettingsCategory.GRAPHICS) {
       GraphicsProfileRow(GraphicsOptions(
-        values[GameSetting.RENDER_SCALE]?.toIntOrNull() ?: prefs.renderScale,
+        RenderScale.parse(values[GameSetting.RENDER_SCALE]) ?: prefs.renderScale,
         values[GameSetting.FXAA]?.toBooleanStrictOrNull() ?: prefs.fxaa,
         values[GameSetting.UPSCALE] ?: prefs.upscaleFilter,
         values[GameSetting.FPS_LIMIT]?.toIntOrNull() ?: prefs.frameRateLimit,

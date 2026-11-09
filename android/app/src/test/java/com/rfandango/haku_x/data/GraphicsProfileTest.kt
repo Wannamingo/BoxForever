@@ -16,7 +16,7 @@ class GraphicsProfileTest {
     val quality = GraphicsProfile.QUALITY.options
     assertEquals(GraphicsProfile.QUALITY, GraphicsProfile.matching(quality))
     assertNull(GraphicsProfile.matching(quality.copy(fpsLimit = 90)))
-    assertNull(GraphicsProfile.matching(quality.copy(scale = 3)))
+    assertNull(GraphicsProfile.matching(quality.copy(scale = 2.5f)))
   }
 
   @Test fun balancedAndQualityKeepThe120FpsLimit() {

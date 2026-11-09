@@ -13,7 +13,7 @@ class SettingsProfileStore(private val context: Context) {
     for (field in GameSetting.entries) core.put(field.key, when (field) {
       GameSetting.UNCAPPED -> run.uncapped.toString()
       GameSetting.FPS_LIMIT -> run.frameRateLimit.toString()
-      GameSetting.RENDER_SCALE -> run.renderScale.toString()
+      GameSetting.RENDER_SCALE -> RenderScale.format(run.renderScale)
       GameSetting.ASYNC_SHADERS -> run.asyncShaders.toString()
       GameSetting.PREBUILD_SHADERS -> run.prebuildShaders.toString()
       GameSetting.ASPECT -> run.aspectRatio
@@ -41,7 +41,11 @@ class SettingsProfileStore(private val context: Context) {
     require(json.optString("format") == "HakuX-Mali-profile" && json.optInt("version") == 1)
     val core = json.getJSONObject("core")
     val values = GameSetting.entries.mapNotNull { field ->
-      if (!core.has(field.key)) null else field to core.getString(field.key).also { require(valid(field, it)) }
+      if (!core.has(field.key)) null else {
+        val raw = core.getString(field.key)
+        require(valid(field, raw))
+        field to if (field == GameSetting.RENDER_SCALE) RenderScale.format(raw.toFloat()) else raw
+      }
     }
     val options = json.getJSONObject("options")
     for (field in ExperienceSetting.entries) if (options.has(field.key)) {
@@ -54,7 +58,7 @@ class SettingsProfileStore(private val context: Context) {
     } else for ((field, value) in values) when (field) {
       GameSetting.UNCAPPED -> app.uncapped = value.toBoolean()
       GameSetting.FPS_LIMIT -> app.frameRateLimit = value.toInt()
-      GameSetting.RENDER_SCALE -> app.renderScale = value.toInt()
+      GameSetting.RENDER_SCALE -> app.renderScale = value.toFloat()
       GameSetting.ASYNC_SHADERS -> app.asyncShaders = value.toBoolean()
       GameSetting.PREBUILD_SHADERS -> app.prebuildShaders = value.toBoolean()
       GameSetting.ASPECT -> app.aspectRatio = value
@@ -77,7 +81,7 @@ class SettingsProfileStore(private val context: Context) {
     GameSetting.UNCAPPED, GameSetting.ASYNC_SHADERS, GameSetting.PREBUILD_SHADERS, GameSetting.FXAA,
     GameSetting.VIDEO_480P, GameSetting.VIDEO_720P, GameSetting.VIDEO_1080I, GameSetting.PAL60 -> value in listOf("true", "false")
     GameSetting.FPS_LIMIT -> value.toIntOrNull()?.let { it in 0..240 } == true
-    GameSetting.RENDER_SCALE -> value.toIntOrNull()?.let { it in 1..4 } == true
+    GameSetting.RENDER_SCALE -> RenderScale.parse(value) != null
     GameSetting.ASPECT -> value in listOf("auto", "4:3", "16:9", "stretch")
     GameSetting.UPSCALE -> value in listOf("bilinear", "sgsr")
     GameSetting.LANGUAGE -> value == AppPrefs.LANG_AUTO || value in AppPrefs.XBOX_LANGUAGES

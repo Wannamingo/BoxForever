@@ -17,6 +17,15 @@ class RendererCapabilitiesTest {
     assertEquals(listOf(0,2,4,8,16),RendererCapabilities.bounded(16).anisotropyChoices)
     assertEquals(listOf(0),RendererCapabilities.bounded(-1).anisotropyChoices)
   }
+  @Test fun fractionalScaleKeepsLegacyDynamicBounds() {
+    val options = ExperienceOptions(mapOf(ExperienceSetting.DYNAMIC to 1, ExperienceSetting.DYNAMIC_MIN to 3,
+      ExperienceSetting.DYNAMIC_MAX to 1))
+    assertEquals("dynamic=1.5,1.5,60", options.dynamicArgument())
+    assertEquals("2", RenderScale.format(RenderScale.parse("2")!!))
+    assertEquals("2.5", RenderScale.format(RenderScale.parse("2.5")!!))
+    assertNull(RenderScale.parse("2.25"))
+    assertNull(RenderScale.parse("4.5"))
+  }
   @Test fun importingUnknownAnisotropyNeverEnablesAnInvalidValue() {
     assertFalse(ExperienceSetting.ANISOTROPY.accepts(3))
     assertFalse(ExperienceSetting.ANISOTROPY.accepts(Int.MAX_VALUE))

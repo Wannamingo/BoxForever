@@ -49,6 +49,7 @@
 #include "hw/xbox/hle/vk/display.h"
 #include "hw/xbox/hle/vk/back.h"
 #include "hw/xbox/hle/vk/swapchain.h"
+#include "hw/xbox/hle/vk/render_scale.h"
 
 #define EXPORT __attribute__((visibility("default")))
 
@@ -678,8 +679,14 @@ EXPORT int SDL_main(int argc, char *argv[])
         }
         if(!strncmp(argv[i],"movie=",6))nc_present_set_movie(atoi(argv[i]+6));
         if(!strncmp(argv[i],"dynamic=",8)) {
-            unsigned min=0,max=2,target=60;char tail;
-            if(sscanf(argv[i]+8,"%u,%u,%u%c",&min,&max,&target,&tail)!=3)min=0;
+            const char *rest = argv[i] + 8;
+            unsigned min = hle_scale_parse(rest, &rest);
+            unsigned max = min && *rest == ',' ? hle_scale_parse(rest + 1, &rest) : 0;
+            unsigned target = 60;
+            char tail;
+            if (!max || *rest != ',' || sscanf(rest + 1, "%u%c", &target, &tail) != 1) {
+                min = 0;
+            }
             hle_back_set_dynamic(min,max,target);nc_movie_enable(hle_back_movie_tracking_on());
         }
         if (!strncmp(argv[i], "postshader=", 11)) {

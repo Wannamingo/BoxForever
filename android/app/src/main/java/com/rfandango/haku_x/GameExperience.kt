@@ -29,8 +29,9 @@ class GameExperience(private val activity: NativeCoreActivity, private val captu
     NativeCoreActivity.nativeSetPostShaderControls(PostShaders.controls(options))
     NativeCoreActivity.nativeSetMoviePolicy(options[ExperienceSetting.MOVIE_ASPECT])
     NativeCoreActivity.nativeSetDynamicResolution(
-      if(options.enabled(ExperienceSetting.DYNAMIC)&&!GameCalibration.isTrial(activity)) options[ExperienceSetting.DYNAMIC_MIN] else 0,
-      options[ExperienceSetting.DYNAMIC_MAX], options[ExperienceSetting.DYNAMIC_TARGET])
+      if (options.enabled(ExperienceSetting.DYNAMIC) && !GameCalibration.isTrial(activity))
+        RenderScale.dynamicSteps(options[ExperienceSetting.DYNAMIC_MIN]) else 0,
+      RenderScale.dynamicSteps(options[ExperienceSetting.DYNAMIC_MAX]), options[ExperienceSetting.DYNAMIC_TARGET])
     NativeCoreActivity.nativeSetFraming(listOf(ExperienceSetting.CROP_LEFT, ExperienceSetting.CROP_RIGHT,
       ExperienceSetting.CROP_TOP, ExperienceSetting.CROP_BOTTOM, ExperienceSetting.ZOOM,
       ExperienceSetting.SHIFT_X, ExperienceSetting.SHIFT_Y).map { options[it] }.toIntArray())

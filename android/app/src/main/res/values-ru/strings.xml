@@ -117,7 +117,7 @@
   <string name="settings_fps_no_limit">Без ограничения</string>
   <string name="settings_fps_value">%1$d FPS</string>
   <string name="settings_scale">Масштаб разрешения</string>
-  <string name="settings_scale_value">Разрешение игры ×%1$d</string>
+  <string name="settings_scale_value">Разрешение игры ×%1$s</string>
   <string name="settings_scale_native">1× (исходное)</string>
   <string name="settings_async_shaders">Асинхронная компиляция шейдеров</string>
   <string name="settings_async_shaders_desc">Компилировать новые шейдеры в фоне, не останавливая игру. Нужные им объекты могут отсутствовать несколько кадров.</string>
