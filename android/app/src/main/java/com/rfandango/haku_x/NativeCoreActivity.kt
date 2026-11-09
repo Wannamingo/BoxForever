@@ -926,7 +926,14 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
   private fun showPostShaders() {
     val store = com.rfandango.haku_x.data.ExperienceStore(this)
     val game = gameKey()
-    val panel = com.rfandango.haku_x.ui.settings.PostShaderPanel(this, store.effective(game), store.effective())
+    val status = when (nativePostShaderStatus()) {
+      1 -> R.string.shader_runtime_active
+      2 -> R.string.shader_runtime_fallback
+      else -> R.string.shader_runtime_pending
+    }
+    val panel = com.rfandango.haku_x.ui.settings.PostShaderPanel(
+      this, store.effective(game), store.effective(), getString(status),
+    )
     showMenuDialog(AlertDialog.Builder(this).setTitle(R.string.shader_title)
       .setView(panel.view)
       .setPositiveButton(R.string.shader_apply) { _, _ ->
@@ -1389,6 +1396,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     @JvmStatic external fun nativeRendererCapabilities(): String?
     @JvmStatic external fun nativeSetPostShader(mode:Int)
     @JvmStatic external fun nativeSetPostShaderControls(values:IntArray)
+    @JvmStatic external fun nativePostShaderStatus(): Int
     @JvmStatic external fun nativeSetMoviePolicy(mode:Int)
     @JvmStatic external fun nativeSetDynamicResolution(min:Int,max:Int,target:Int)
     @JvmStatic external fun nativeToggleMovie():Boolean

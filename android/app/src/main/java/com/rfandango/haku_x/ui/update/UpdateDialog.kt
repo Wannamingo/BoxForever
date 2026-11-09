@@ -100,10 +100,9 @@ fun UpdateDialog(release: Updates.Release, onDismiss: () -> Unit) {
           progress = -1f
           job = scope.launch {
             try {
-              val apk = Updates.download(context, release) { done, total ->
+              Updates.downloadAndInstall(context, release) { done, total ->
                 progress = if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else -1f
               }
-              Updates.install(context, apk)
               onDismiss()
             } catch (e: CancellationException) {
               throw e
@@ -120,7 +119,6 @@ fun UpdateDialog(release: Updates.Release, onDismiss: () -> Unit) {
       TextButton(onClick = {
         if (downloading) {
           job?.cancel()
-          job = null
         } else {
           onDismiss()
         }

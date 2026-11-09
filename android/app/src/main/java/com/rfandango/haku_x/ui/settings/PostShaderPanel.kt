@@ -7,7 +7,12 @@ import com.rfandango.haku_x.R
 import com.rfandango.haku_x.data.*
 
 /** Platform widgets work inside SDLActivity without a Compose lifecycle owner. */
-class PostShaderPanel(private val context: Context, base: ExperienceOptions, global: ExperienceOptions) {
+class PostShaderPanel(
+  private val context: Context,
+  base: ExperienceOptions,
+  global: ExperienceOptions,
+  private val runtimeStatus: String,
+) {
   private val draft = PostShaderDraft(base, global)
   private val body = LinearLayout(context).apply {
     orientation = LinearLayout.VERTICAL
@@ -24,6 +29,7 @@ class PostShaderPanel(private val context: Context, base: ExperienceOptions, glo
   private fun refresh() {
     val scroll = view.scrollY
     body.removeAllViews()
+    body.addView(text(runtimeStatus))
     body.addView(text(context.getString(R.string.shader_controls_desc)))
     choice(ExperienceSetting.POST_SHADER, (0..4).toList())
     choice(ExperienceSetting.POST_MASK, (-1..5).toList())

@@ -20,6 +20,9 @@ void hle_present_set_shader_controls(const int values[8]);
 void hle_present_prepare_shader(void);
 uint32_t hle_present_shader_generation(void);
 int hle_present_shader_mode(void);
+enum { HLE_SHADER_PENDING, HLE_SHADER_ACTIVE, HLE_SHADER_FALLBACK };
+/* May be read by the Android UI. Reports the latest successful game presentation. */
+int hle_present_shader_status(void);
 void hle_present_set_picture(int brightness, int contrast, int saturation, int gamma, int sharpness);
 void hle_present_set_framing(int left, int right, int top, int bottom, int zoom, int shift_x, int shift_y);
 

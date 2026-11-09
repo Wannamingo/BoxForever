@@ -80,13 +80,15 @@ enum {
      * write-mask change within a legacy render pass. End the pass at these
      * transitions, preserving runs with the same ROP state. */
     HLE_QUIRK_ROP_PASS_SPLIT = 1u << 12,
+    HLE_QUIRK_NO_WBUF = 1u << 13,
+    HLE_QUIRK_NO_SEM_WAIT = 1u << 14,
 };
 
 extern uint32_t g_hle_quirks;
 
 static inline bool hle_quirk(uint32_t q)
 {
-    return (g_hle_quirks & q) != 0;
+    return (__atomic_load_n(&g_hle_quirks, __ATOMIC_RELAXED) & q) != 0;
 }
 
 /* The driver's quirks (the device is created), and HAKUX_HLE_QUIRKS. */

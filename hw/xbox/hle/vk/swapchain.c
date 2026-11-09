@@ -41,7 +41,6 @@
 
 #define T (g_ps.t)
 #define PS_FRAMES 3             /* the presenter's submits in flight */
-#define PS_IMAGES 8             /* swapchain images at most */
 #define PS_RAMP 1024            /* a frame's share of the ramp buffer (768 used) */
 #define PS_PUSH_BYTES (24 * sizeof(float))
 
@@ -83,9 +82,9 @@ static struct {
     VkExtent2D ext, wsize;      /* the images' (the panel's orientation), the window's */
     float rot[4];               /* the window's clip space into the images' (k_vs) */
     uint32_t nimg, idx;
-    VkImage img[PS_IMAGES];
-    VkImageView view[PS_IMAGES];
-    VkSemaphore drawn[PS_IMAGES];   /* its pass done: what its present waits for */
+    VkImage *img;
+    VkImageView *view;
+    VkSemaphore *drawn;         /* per-image semaphore consumed by present */
     bool stale;                 /* out of date: made again at the next begin */
     bool follows;               /* its transform is the panel's: SUBOPTIMAL means it turned */
     /* the frame shown */
@@ -119,6 +118,9 @@ static pthread_mutex_t g_shader_lock = PTHREAD_MUTEX_INITIALIZER;
 static int g_shader_pending[8] = {0,1,1,14,24,0,0,0};
 static int g_shader_applied[8] = {0,1,1,14,24,0,0,0};
 static uint32_t g_shader_pending_gen = 1, g_shader_applied_gen;
+static uint32_t g_shader_presented_gen;
+static int g_shader_status = HLE_SHADER_PENDING;
+static int g_shader_last_presentation = HLE_SHADER_PENDING; /* presenter thread only */
 void hle_present_set_shader_controls(const int values[8])
 {
     static const int low[8]={0,0,1,0,0,0,0,0}, high[8]={4,5,8,100,80,30,100,30};
@@ -127,6 +129,7 @@ void hle_present_set_shader_controls(const int values[8])
     pthread_mutex_lock(&g_shader_lock);
     if(memcmp(v,g_shader_pending,sizeof(v))) {
         memcpy(g_shader_pending,v,sizeof(v));g_shader_pending_gen++;
+        g_shader_status = HLE_SHADER_PENDING;
     }
     pthread_mutex_unlock(&g_shader_lock);
 }
@@ -148,6 +151,28 @@ void hle_present_prepare_shader(void)
 }
 int hle_present_shader_mode(void) { return g_shader_applied[0]; }
 uint32_t hle_present_shader_generation(void) { return g_shader_applied_gen; }
+int hle_present_shader_status(void)
+{
+    pthread_mutex_lock(&g_shader_lock);
+    const int status = g_shader_status;
+    pthread_mutex_unlock(&g_shader_lock);
+    return status;
+}
+
+static void shader_presented(bool fallback)
+{
+    const int status = fallback ? HLE_SHADER_FALLBACK : HLE_SHADER_ACTIVE;
+    if (g_shader_presented_gen == g_shader_applied_gen && g_shader_last_presentation == status) {
+        return;
+    }
+    g_shader_presented_gen = g_shader_applied_gen;
+    g_shader_last_presentation = status;
+    pthread_mutex_lock(&g_shader_lock);
+    if (g_shader_presented_gen == g_shader_pending_gen) {
+        g_shader_status = status;
+    }
+    pthread_mutex_unlock(&g_shader_lock);
+}
 static float g_picture[5] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
 static float g_uv[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 static float g_zoom = 1.0f, g_shift_x, g_shift_y;
@@ -661,9 +686,7 @@ static void idle(void)
         return;                         /* nothing runs on it any more */
     }
     if (g_hvk.caps.timeline) {
-        VkSemaphoreWaitInfo wi = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, .semaphoreCount = 1,
-                                   .pSemaphores = &g_ps.tl, .pValues = &g_ps.submitted };
-        VkResult r = T.vkWaitSemaphores(g_hvk.dev, &wi, 2000000000ull);
+        VkResult r = hle_tl_sem_wait(g_ps.tl, g_ps.submitted, 2000000000ull);
         if (r != VK_TIMEOUT) {
             hle_vk_check(r, "vkWaitSemaphores (present)");
         }
@@ -680,10 +703,64 @@ static void idle(void)
 static void drop_images(void)
 {
     for (uint32_t i = 0; i < g_ps.nimg; i++) {
-        T.vkDestroyImageView(g_hvk.dev, g_ps.view[i], NULL);
-        T.vkDestroySemaphore(g_hvk.dev, g_ps.drawn[i], NULL);
+        if (g_ps.view && g_ps.view[i]) {
+            T.vkDestroyImageView(g_hvk.dev, g_ps.view[i], NULL);
+        }
+        if (g_ps.drawn && g_ps.drawn[i]) {
+            T.vkDestroySemaphore(g_hvk.dev, g_ps.drawn[i], NULL);
+        }
     }
+    free(g_ps.img);
+    free(g_ps.view);
+    free(g_ps.drawn);
+    g_ps.img = NULL;
+    g_ps.view = NULL;
+    g_ps.drawn = NULL;
     g_ps.nimg = 0;
+}
+
+/* Allocate from the count returned by Vulkan, including partial setup cleanup. */
+static VkResult make_images(VkSwapchainKHR sc, VkFormat format)
+{
+    uint32_t count = 0;
+    VkResult r = T.vkGetSwapchainImagesKHR(g_hvk.dev, sc, &count, NULL);
+    if (r != VK_SUCCESS || !count) {
+        return r != VK_SUCCESS ? r : VK_ERROR_INITIALIZATION_FAILED;
+    }
+    g_ps.img = calloc(count, sizeof(*g_ps.img));
+    if (!g_ps.img) {
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    r = T.vkGetSwapchainImagesKHR(g_hvk.dev, sc, &count, g_ps.img);
+    if (r != VK_SUCCESS || !count) {
+        return r != VK_SUCCESS ? r : VK_ERROR_INITIALIZATION_FAILED;
+    }
+    g_ps.view = calloc(count, sizeof(*g_ps.view));
+    g_ps.drawn = calloc(count, sizeof(*g_ps.drawn));
+    if (!g_ps.view || !g_ps.drawn) {
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    g_ps.nimg = count;
+    const VkSemaphoreCreateInfo sci = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    for (uint32_t i = 0; i < count; i++) {
+        VkImageViewCreateInfo vci = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = g_ps.img[i],
+            .viewType = VK_IMAGE_VIEW_TYPE_2D, .format = format,
+            .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
+        VkImageView view = VK_NULL_HANDLE;
+        r = T.vkCreateImageView(g_hvk.dev, &vci, NULL, &view);
+        if (r != VK_SUCCESS) {
+            return r;
+        }
+        g_ps.view[i] = view;
+        VkSemaphore drawn = VK_NULL_HANDLE;
+        r = T.vkCreateSemaphore(g_hvk.dev, &sci, NULL, &drawn);
+        if (r != VK_SUCCESS) {
+            return r;
+        }
+        g_ps.drawn[i] = drawn;
+    }
+    return VK_SUCCESS;
 }
 
 /* The window gone, or another: its swapchain and surface go. */
@@ -734,7 +811,6 @@ static bool make_swapchain(uint32_t w, uint32_t h)
     if (caps.maxImageCount) {
         n = MIN(n, caps.maxImageCount);
     }
-    n = MIN(n, (uint32_t)PS_IMAGES);
     /* Pre-rotated: the images in the panel's own orientation (its transform
      * now), the picture turned into them as it's drawn. An image in the
      * window's orientation the compositor turns itself, with the GPU at every
@@ -791,21 +867,17 @@ static bool make_swapchain(uint32_t w, uint32_t h)
         hle_log("hakuX-hle-back", "present: vkCreateSwapchainKHR %ux%u: %d", w, h, r);
         return false;
     }
-    uint32_t ni = PS_IMAGES;
-    T.vkGetSwapchainImagesKHR(g_hvk.dev, sc, &ni, g_ps.img);
-    for (uint32_t i = 0; i < ni; i++) {
-        VkImageViewCreateInfo vci = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = g_ps.img[i],
-            .viewType = VK_IMAGE_VIEW_TYPE_2D, .format = fmt.format,
-            .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
-        T.vkCreateImageView(g_hvk.dev, &vci, NULL, &g_ps.view[i]);
-        const VkSemaphoreCreateInfo sci = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-        T.vkCreateSemaphore(g_hvk.dev, &sci, NULL, &g_ps.drawn[i]);
+    r = make_images(sc, fmt.format);
+    if (r != VK_SUCCESS) {
+        hle_vk_check(r, "present swapchain image setup");
+        drop_images();
+        T.vkDestroySwapchainKHR(g_hvk.dev, sc, NULL);
+        g_ps.sc = VK_NULL_HANDLE;
+        return false;
     }
-    g_ps.nimg = ni;
     g_ps.ext = (VkExtent2D){ w, h };
     g_ps.stale = false;
-    if (fmt.format != g_ps.pipe_fmt) {
+    if (fmt.format != g_ps.pipe_fmt || !g_ps.pipe[P_BILINEAR]) {
         for (unsigned i = 0; i < P_FXAA; i++) {
             if (g_ps.pipe[i]) {
                 T.vkDestroyPipeline(g_hvk.dev, g_ps.pipe[i], NULL);
@@ -814,10 +886,14 @@ static bool make_swapchain(uint32_t w, uint32_t h)
         }
         g_ps.pipe_fmt = fmt.format;
     }
+    if (!g_ps.pipe[P_BILINEAR]) {
+        g_ps.stale = true;
+        return false;
+    }
     g_ps.fmt = fmt.format;
     hle_log("hakuX-hle-back", "present: swapchain %ux%u (the window %ux%u, turned %u degrees), %u images, "
-            "format %d", w, h, g_ps.wsize.width, g_ps.wsize.height, turn * 90, ni, fmt.format);
-    return g_ps.pipe[P_BILINEAR] != VK_NULL_HANDLE;
+            "format %d", w, h, g_ps.wsize.width, g_ps.wsize.height, turn * 90, g_ps.nimg, fmt.format);
+    return true;
 }
 
 /* ---- each refresh ---- */
@@ -829,9 +905,7 @@ static bool wait_value(uint64_t v)
     }
     VkResult r;
     if (g_hvk.caps.timeline) {
-        VkSemaphoreWaitInfo wi = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, .semaphoreCount = 1,
-                                   .pSemaphores = &g_ps.tl, .pValues = &v };
-        r = T.vkWaitSemaphores(g_hvk.dev, &wi, 1000000000ull);
+        r = hle_tl_sem_wait(g_ps.tl, v, 1000000000ull);
     } else {
         VkFence fence = VK_NULL_HANDLE;
         for (unsigned i = 0; i < PS_FRAMES; i++) {
@@ -942,6 +1016,11 @@ bool hle_present_begin(struct ANativeWindow *win, uint32_t *w, uint32_t *h)
     }
     if (r == VK_SUBOPTIMAL_KHR && g_ps.follows) {
         g_ps.stale = true;              /* the panel turned: this image, then another swapchain */
+    }
+    if (g_ps.idx >= g_ps.nimg) {
+        hle_log("hakuX-hle-back", "present: invalid swapchain image index %u of %u", g_ps.idx, g_ps.nimg);
+        g_ps.failed = true;            /* the acquire may already have signaled its semaphore */
+        return false;
     }
     *w = g_ps.wsize.width;
     *h = g_ps.wsize.height;
@@ -1358,10 +1437,9 @@ void hle_present_end(float sx, float sy, bool fxaa, int upscale, bool average, u
             const int64_t tw0 = hle_now_ns();
             const bool ready = wait_value(value);
             g_wait_ns += hle_now_ns() - tw0;
-            if (!ready && !g_hvk.caps.timeline) {
-                /* The fence protects both the Android image and this frame's
-                 * command/descriptor storage from reuse before completion. */
-                hle_log("hakuX-hle-back", "present: fence wait failed; presentation stopped");
+            if (!ready) {
+                /* Never present an image whose render has not completed. */
+                hle_log("hakuX-hle-back", "present: completion wait failed; presentation stopped");
                 g_ps.failed = true;
                 return;
             }
@@ -1375,6 +1453,10 @@ void hle_present_end(float sx, float sy, bool fxaa, int upscale, bool average, u
     if (pr == VK_SUCCESS || pr == VK_SUBOPTIMAL_KHR) {
         g_ps.shown = true;
         g_ps.shown_key = key;
+        if (g_ps.have) {
+            const unsigned effect = shader == 3 ? P_NTSC : shader == 4 ? P_TEMPORAL : P_CRT;
+            shader_presented(shader && !g_ps.pipe[effect]);
+        }
     }
     if (pr == VK_ERROR_OUT_OF_DATE_KHR || (pr == VK_SUBOPTIMAL_KHR && g_ps.follows)) {
         g_ps.stale = true;

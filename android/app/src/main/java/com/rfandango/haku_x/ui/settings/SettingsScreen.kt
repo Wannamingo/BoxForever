@@ -437,6 +437,17 @@ fun SettingsScreen(
     SettingsGroup(category == SettingsCategory.GRAPHICS) { PictureSettingsSection(prefs) }
     SettingsGroup(category == SettingsCategory.APP) {
       Section(stringResource(R.string.settings_section_updates))
+      var previewUpdates by remember { mutableStateOf(Updates.includePreview(context)) }
+      SwitchItem(
+        title = stringResource(R.string.settings_update_preview),
+        summary = stringResource(R.string.settings_update_preview_desc),
+        checked = previewUpdates,
+        onChange = {
+          previewUpdates = it
+          updateRelease = null
+          Updates.setIncludePreview(context, it)
+        },
+      )
       SettingsTarget(R.string.settings_update_check) {
         ListItem(
           headlineContent = { Text(stringResource(R.string.settings_update_check)) },

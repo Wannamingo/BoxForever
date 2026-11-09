@@ -71,6 +71,48 @@ static bool malisx2_023(const HleDriver *d)
     return mali(d) && strstr(d->drv.driverInfo, "malisx2.0.2.3") != NULL;
 }
 
+static bool unified(const HleDriver *d)
+{
+    return mali(d) && (strstr(d->drv.driverInfo, "-Unified.") ||
+                      strstr(d->drv.driverInfo, "-unified.") ||
+                      strstr(d->drv.driverInfo, ".unified-"));
+}
+
+static bool malisx2(const HleDriver *d)
+{
+    return mali(d) && strstr(d->drv.driverInfo, "malisx2");
+}
+
+static bool arm_blob(const HleDriver *d)
+{
+    return mali(d) && arm_proprietary(d) && !malisx2(d) && !unified(d);
+}
+
+static unsigned arm_release(const HleDriver *d)
+{
+    const char *p = d->drv.driverInfo;
+    if (!arm_blob(d) || strncmp(p, "v1.r", 4)) {
+        return 0;
+    }
+    p += 4;
+    unsigned release = 0;
+    while (*p >= '0' && *p <= '9' && release < 1000) {
+        release = release * 10 + (unsigned)(*p++ - '0');
+    }
+    return *p == 'p' && release < 1000 ? release : 0;
+}
+
+static bool arm_before_r40(const HleDriver *d)
+{
+    const unsigned release = arm_release(d);
+    return release > 0 && release < 40;
+}
+
+static bool g57_arm_r40(const HleDriver *d)
+{
+    return arm_release(d) == 40 && strstr(d->props.deviceName, "Mali-G57") != NULL;
+}
+
 /* Seen on (driver, version, what showed it). */
 static const HleQuirk k_quirks[] = {
     /* Adreno 840 stock driver 0x8034a02c: Forza's menu text picks its glyph
@@ -112,6 +154,10 @@ static const HleQuirk k_quirks[] = {
     /* RG477M, MaliSX2 0.2.3: Sands of Time's sky and dust drew black blocks.
      * A/B: keeping blend-enable and write-mask uniform per pass removes them. */
     { HLE_QUIRK_ROP_PASS_SPLIT, "rop_pass_split", malisx2_023 },
+    /* The reported W-buffer hang was on G57 under the Arm r40 driver. */
+    { HLE_QUIRK_NO_WBUF, "no_wbuf", g57_arm_r40 },
+    /* Older Arm host waits can lose the device while the counter still works. */
+    { HLE_QUIRK_NO_SEM_WAIT, "no_sem_wait", arm_before_r40 },
 };
 
 static uint32_t g_defaults;
@@ -161,7 +207,7 @@ static uint32_t apply(uint32_t mask, const char *spec)
 static void set(uint32_t mask, const char *why)
 {
     char on[256], def[256];
-    g_hle_quirks = mask;
+    hle_atomic_set(&g_hle_quirks, mask);
     names(mask, on, sizeof(on));
     names(g_defaults, def, sizeof(def));
     hle_log("hakuX-hle-back", "quirks: %s (driver defaults %s%s%s)", on, def, why ? "; " : "",
@@ -183,6 +229,8 @@ void hle_quirks_init(VkPhysicalDevice phys)
     }
     hle_log("hakuX-hle-back", "vk: driver \"%s\" (id %u) %s", d.drv.driverName, d.drv.driverID,
             d.drv.driverInfo);
+    hle_log("hakuX-hle-back", "vk: driver family %s",
+            unified(&d) ? "Unified" : malisx2(&d) ? "MaliSX2" : arm_blob(&d) ? "Arm system" : "other");
     const char *e = getenv("HAKUX_HLE_QUIRKS");
     set(apply(g_defaults, e), e ? "HAKUX_HLE_QUIRKS" : NULL);
 }

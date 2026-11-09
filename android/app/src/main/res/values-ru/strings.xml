@@ -143,6 +143,11 @@
   <string name="settings_section_updates">Обновления</string>
   <string name="settings_update_check">Проверить обновления</string>
   <string name="settings_update_check_desc">HakuX-Mali %1$s. Проверка новых версий на GitHub также выполняется при запуске приложения.</string>
+  <string name="settings_update_preview">Включать предварительные версии</string>
+  <string name="settings_update_preview_desc">Также проверять наличие тестовых сборок на GitHub.</string>
+  <string name="shader_runtime_active">Последний кадр игры использовал сохранённые настройки шейдера.</string>
+  <string name="shader_runtime_pending">Сохранённые настройки шейдера ожидают следующего кадра игры.</string>
+  <string name="shader_runtime_fallback">Не удалось запустить шейдер. Используется обычный вывод.</string>
   <string name="settings_update_checking">Проверка…</string>
   <string name="update_title">Доступен HakuX-Mali %1$s</string>
   <string name="update_installed">Установлен HakuX-Mali %1$s.</string>

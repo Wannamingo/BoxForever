@@ -5,10 +5,30 @@ import org.junit.Test
 
 class UpdatePolicyTest {
   @Test fun forkFeedAndAssets() {
-    assertEquals("https://api.github.com/repos/Wannamingo/HakuX-Mali/releases/latest", UpdatePolicy.LATEST_URL)
-    assertTrue(UpdatePolicy.isApkAsset("HakuX-Mali-1.0-release.apk", "https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.2.0-rg477m.2/HakuX-Mali-1.0-release.apk"))
-    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "https://github.com/rfandango/hakuX/releases/download/v1.2.0/hakuX.apk"))
-    assertFalse(UpdatePolicy.isApkAsset("source.zip", "https://github.com/Wannamingo/HakuX-Mali/releases/download/v1/source.zip"))
+    assertEquals("https://api.github.com/repos/Wannamingo/HakuX-Mali/releases?per_page=30", UpdatePolicy.RELEASES_URL)
+    val tag = "v1.2.0-rg477m.2"
+    val base = "https://github.com/Wannamingo/HakuX-Mali/releases/download"
+    assertTrue(UpdatePolicy.isApkAsset("HakuX-Mali-1.0-release.apk", "$base/$tag/HakuX-Mali-1.0-release.apk", tag))
+    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "https://github.com/rfandango/hakuX/releases/download/$tag/hakuX.apk", tag))
+    assertFalse(UpdatePolicy.isApkAsset("source.zip", "$base/$tag/source.zip", tag))
+    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/v1.2/hakuX.apk", tag))
+    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/$tag/other.apk", tag))
+  }
+
+  @Test fun stableAndPreviewOrdering() {
+    assertTrue(UpdatePolicy.compareVersions("v1.8", "v1.8.0-rc.9") > 0)
+    assertTrue(UpdatePolicy.compareVersions("v1.8.0-rc.1", "v1.8.0-beta.10") > 0)
+    assertTrue(UpdatePolicy.compareVersions("v1.8.0-preview.10", "v1.8.0-preview.2") > 0)
+    assertTrue(UpdatePolicy.compareVersions("v1.8.0-preview.1", "v1.7.5") > 0)
+    assertNull(UpdatePolicy.releaseVersion("themes-v2"))
+    assertEquals("1.2.0-rg477m.2", UpdatePolicy.releaseVersion("v1.2.0-rg477m.2"))
+  }
+
+  @Test fun requiresValidSha256Metadata() {
+    assertEquals("ab".repeat(32), UpdatePolicy.assetDigest("sha256:" + "AB".repeat(32)))
+    assertNull(UpdatePolicy.assetDigest("sha256:" + "ab".repeat(31)))
+    assertNull(UpdatePolicy.assetDigest("sha512:" + "ab".repeat(32)))
+    assertNull(UpdatePolicy.assetDigest("sha256:" + "zz".repeat(32)))
   }
 
   @Test fun forkRevisionOrdering() {

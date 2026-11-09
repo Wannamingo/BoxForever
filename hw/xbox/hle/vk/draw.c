@@ -2463,12 +2463,12 @@ static uint32_t stage_slot(const HleCmdDraw *c, unsigned st, uint32_t rt_id, uin
     } else if (c->tex[st] == rt_id && g_snap_cur >= 0 && g_snap_rt == rt_id &&
                (rt = hle_surf_get(rt_id)) != NULL) {
         slot = g_snap[g_snap_cur].slot;  /* the target, copied before the draw */
-        *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (256u << st) : 0;
+        *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (rt->scale > 1 ? 256u << st : 0) : 0;
         return slot;
     } else if (ts && (ts->general || ts->layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)) {
         slot = surf_slot(ts, c->tex_ord >> 2 * st & 3);  /* RT as texture (identity) */
         /* linear format: texel coords, of a scaled image */
-        *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (256u << st) : 0;
+        *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (ts->scale > 1 ? 256u << st : 0) : 0;
     }
     uint32_t id = c->tex[st];
     if (id && !tx && id < 8192 && g_rt_told < 64 && !(g_rt_seen[id >> 3] >> (id & 7) & 1)) {
@@ -3761,7 +3761,8 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
      * depth meets the programs' (Splinter Cell: FF world, program
      * characters); their pixel stage scale is 1 / wfar (c->wscale). */
     bool wff = !prog && !rhw && c->wscale > 0.0f;
-    bool wbuf = (prog || rhw || wff) && ds && s->rs[RS_ZENABLE] == 2 && !(dbgf & 8);
+    bool wbuf = (prog || rhw || wff) && ds && s->rs[RS_ZENABLE] == 2 && !(dbgf & 8) &&
+                !hle_quirk(HLE_QUIRK_NO_WBUF);
     /* NV2A ZCLAMP_EN CLAMP: depth past the near and far planes is clamped to
      * them instead of clipping the primitive (MechAssault 2's sky, drawn past
      * the far plane, was black): the rasterizer's depth clamp */

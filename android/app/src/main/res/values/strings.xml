@@ -153,6 +153,11 @@
   <string name="settings_section_updates">Updates</string>
   <string name="settings_update_check">Check for updates</string>
   <string name="settings_update_check_desc">HakuX-Mali %1$s. Looks for a newer release on GitHub, as the app also does each time it starts.</string>
+  <string name="settings_update_preview">Include preview updates</string>
+  <string name="settings_update_preview_desc">Also check GitHub for testing releases.</string>
+  <string name="shader_runtime_active">The last game frame used the saved shader settings.</string>
+  <string name="shader_runtime_pending">Waiting for a game frame to apply the saved shader settings.</string>
+  <string name="shader_runtime_fallback">The shader could not start. The game uses normal presentation.</string>
   <string name="settings_update_checking">Checking…</string>
   <string name="update_title">HakuX-Mali %1$s is available</string>
   <string name="update_installed">This is HakuX-Mali %1$s.</string>

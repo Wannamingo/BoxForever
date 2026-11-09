@@ -48,6 +48,7 @@
 #include <time.h>
 #include "hw/xbox/hle/vk/display.h"
 #include "hw/xbox/hle/vk/back.h"
+#include "hw/xbox/hle/vk/swapchain.h"
 
 #define EXPORT __attribute__((visibility("default")))
 
@@ -71,6 +72,9 @@ EXPORT JNIEXPORT void JNICALL Java_com_rfandango_haku_1x_NativeCoreActivity_nati
 }
 EXPORT JNIEXPORT void JNICALL Java_com_rfandango_haku_1x_NativeCoreActivity_nativeSetPostShader(JNIEnv *env,jclass cls,jint mode)
 { nc_present_set_shader(mode); }
+
+EXPORT JNIEXPORT jint JNICALL Java_com_rfandango_haku_1x_NativeCoreActivity_nativePostShaderStatus(JNIEnv *env, jclass cls)
+{ return hle_present_shader_status(); }
 
 EXPORT JNIEXPORT void JNICALL Java_com_rfandango_haku_1x_NativeCoreActivity_nativeSetMoviePolicy(JNIEnv *env,jclass cls,jint mode)
 { nc_present_set_movie(mode); }

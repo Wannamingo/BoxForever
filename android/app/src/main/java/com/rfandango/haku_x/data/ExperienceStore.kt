@@ -4,13 +4,32 @@ import android.content.Context
 import android.util.AtomicFile
 import org.json.JSONObject
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.RandomAccessFile
 
 /** UI writes atomically; the game reads afresh on resume. No per-frame disk access. */
 class ExperienceStore(context: Context) {
   private val file = AtomicFile(File(context.filesDir, "experience-settings.json"))
-  private fun read(): JSONObject = runCatching {
-    file.openRead().bufferedReader().use { JSONObject(it.readText()) }
-  }.getOrElse { JSONObject() }
+  private val lockFile = File(context.filesDir, "experience-settings.lock")
+
+  // AtomicFile.openRead() may recover the backup or remove an orphaned staging file.
+  // Readers and writers therefore take the same lock, separate from the renamed file.
+  private fun <T> locked(block: () -> T): T = synchronized(PROCESS_LOCK) {
+    RandomAccessFile(lockFile, "rw").use { handle ->
+      handle.channel.lock().use { block() }
+    }
+  }
+
+  private fun readLocked(): JSONObject {
+    return try {
+      file.openRead().bufferedReader(Charsets.UTF_8).use { JSONObject(it.readText()) }
+    } catch (e: FileNotFoundException) {
+      if (file.baseFile.exists() || File(file.baseFile.path + ".bak").exists()) throw e
+      JSONObject()
+    }
+  }
+
+  private fun read(): JSONObject = runCatching { locked { readLocked() } }.getOrElse { JSONObject() }
 
   private fun section(json: JSONObject, game: String?) =
     if (game == null) json.optJSONObject("global") else json.optJSONObject("games")?.optJSONObject(game)
@@ -80,13 +99,15 @@ class ExperienceStore(context: Context) {
     }
   }
 
-  private fun update(block: (JSONObject) -> Unit) {
-    val data = read(); block(data)
+  private fun update(block: (JSONObject) -> Unit) = locked {
+    val data = readLocked()
+    block(data)
     val output = file.startWrite()
     try { output.write(data.toString().toByteArray(Charsets.UTF_8)); file.finishWrite(output) }
     catch (e: Exception) { file.failWrite(output); throw e }
   }
   companion object {
+    private val PROCESS_LOCK = Any()
     // Start, shoulders, face buttons and stick clicks. Modifier itself is never assignable.
     val HOTKEY_KEYS = setOf(108, 102, 103, 96, 97, 99, 100, 106, 107)
   }

@@ -12,6 +12,7 @@
 /* timeline.c */
 int hle_tl_init(void (*on_complete)(uint64_t completed));
 VkSemaphore hle_tl_sem(void);
+VkResult hle_tl_sem_wait(VkSemaphore sem, uint64_t value, uint64_t timeout_ns);
 /* Submit a render boundary, with a timeline signal or a completion fence.
  * Acquires the queue lock itself; can wait for a free fence before doing so. */
 VkResult hle_tl_submit(const VkSubmitInfo2 *submit, uint64_t value);
