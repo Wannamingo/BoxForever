@@ -25,6 +25,7 @@ typedef struct Buf {
     char *p;
     size_t cap, len;
     bool overflow;
+    const char *half;
 } Buf;
 
 static void put(Buf *b, const char *fmt, ...)
@@ -90,22 +91,22 @@ static void in_expr(Buf *b, uint8_t in, bool alpha, bool final)
     case 1: put(b, "(1.0 - clamp(%s, 0.0, 1.0))", x); break;     /* UNSIGNED_INVERT */
     case 2: put(b, "(2.0 * max(%s, 0.0) - 1.0)", x); break;      /* EXPAND_NORMAL */
     case 3: put(b, "(-2.0 * max(%s, 0.0) + 1.0)", x); break;     /* EXPAND_NEGATE */
-    case 4: put(b, "(max(%s, 0.0) - 0.5)", x); break;            /* HALFBIAS_NORMAL */
-    case 5: put(b, "(-max(%s, 0.0) + 0.5)", x); break;           /* HALFBIAS_NEGATE */
+    case 4: put(b, "(max(%s, 0.0) - %s)", x, b->half); break;    /* HALFBIAS_NORMAL */
+    case 5: put(b, "(-max(%s, 0.0) + %s)", x, b->half); break;   /* HALFBIAS_NEGATE */
     case 6: put(b, "(%s)", x); break;                            /* SIGNED_IDENTITY */
     default: put(b, "(-(%s))", x); break;                        /* SIGNED_NEGATE */
     }
 }
 
-static const char *out_map(uint32_t out)
+static void out_expr(char *e, size_t n, uint32_t out, const char *v, const char *half)
 {
     switch ((out >> 15) & 7) {
-    case 1: return "(%s - 0.5)";                        /* BIAS */
-    case 2: return "(%s * 2.0)";                        /* SHIFTLEFT_1 */
-    case 3: return "((%s - 0.5) * 2.0)";                /* SHIFTLEFT_1_BIAS */
-    case 4: return "(%s * 4.0)";                        /* SHIFTLEFT_2 */
-    case 6: return "(%s * 0.5)";                        /* SHIFTRIGHT_1 */
-    default: return "(%s)";
+    case 1: snprintf(e, n, "(%s - %s)", v, half); break;           /* BIAS */
+    case 2: snprintf(e, n, "(%s * 2.0)", v); break;                /* SHIFTLEFT_1 */
+    case 3: snprintf(e, n, "((%s - %s) * 2.0)", v, half); break;   /* SHIFTLEFT_1_BIAS */
+    case 4: snprintf(e, n, "(%s * 4.0)", v); break;                /* SHIFTLEFT_2 */
+    case 6: snprintf(e, n, "(%s * 0.5)", v); break;                /* SHIFTRIGHT_1 */
+    default: snprintf(e, n, "(%s)", v); break;
     }
 }
 
@@ -152,9 +153,9 @@ static void stage(Buf *b, const HlePshKey *k, unsigned s)
     static const char *const k_rv[3] = { "ab", "cd", "ms" };
     static const char *const k_av[3] = { "aab", "acd", "ams" };
     for (unsigned i = 0; i < 3; i++) {
-        snprintf(e, sizeof(e), out_map(ro), k_rv[i]);
+        out_expr(e, sizeof(e), ro, k_rv[i], b->half);
         put(b, "    %s = clamp(%s, -1.0, 1.0);\n", k_rv[i], e);
-        snprintf(e, sizeof(e), out_map(ao), k_av[i]);
+        out_expr(e, sizeof(e), ao, k_av[i], b->half);
         put(b, "    %s = clamp(%s, -1.0, 1.0);\n", k_av[i], e);
     }
     /* outputs: AB bits 4-7, CD bits 0-3, SUM bits 8-11 */
@@ -273,9 +274,25 @@ static void alpha_kill(Buf *b, const HlePshKey *k, unsigned s, unsigned m)
 
 size_t hle_psh_glsl(const HlePshKey *k, char *buf, size_t cap, unsigned *unsupported)
 {
-    Buf b = { buf, cap, 0, false };
+    Buf b = { buf, cap, 0, false, "0.5" };
     const char *interp = k->flat ? "flat " : "";
     unsigned unsup = 0;
+    /* NV2A's bias represents 0.5 as 0x80, while halving 1.0 yields 0x7f.
+     * Halo 2's scope selects between them using the high bit of r0.a. */
+    if (k->count & 0x100) {
+        for (unsigned s = 0; s < (k->count & 0xff) && s < 8; s++) {
+            if ((k->rgb_out[s] | k->alpha_out[s]) & 0x4000) {
+                b.half = "(128.0 / 255.0)";
+                break;
+            }
+        }
+    }
+    /* HILO_1 samples the two unsigned 16-bit halves of packed depth.
+     * Using signed R/G bytes cycles Halo 2's fog lookup every 256 steps. */
+    bool hilo1 = false;
+    for (unsigned s = 0; s < 3; s++) {
+        hilo1 |= ((k->dot_map >> (4 * s)) & 7) == 4;
+    }
     put(&b, "#version 450\n#extension GL_EXT_nonuniform_qualifier : require\n%s",
         hle_push_glsl());
     put(&b, "layout(set = 0, binding = 0) uniform texture2D uTex2D[];\n"
@@ -315,6 +332,7 @@ size_t hle_psh_glsl(const HlePshKey *k, char *buf, size_t cap, unsigned *unsuppo
             /* PSDotMapping of a texture color to a vector */
             "vec3 dmap(uint m, vec4 c) {\n"
             "  if (m == 0u) return c.rgb;\n"
+            "%s"
             "  if (m == 3u) { vec3 v = floor(c.rgb * 255.0 + 0.5);\n"
             "    return mix(v, v - 256.0, greaterThanEqual(v, vec3(128.0))) / 127.0; }\n"
             "  if (m >= 4u) { vec2 h = c.rg * 2.0 - 1.0;\n"
@@ -333,6 +351,8 @@ size_t hle_psh_glsl(const HlePshKey *k, char *buf, size_t cap, unsigned *unsuppo
             "layout(input_attachment_index = 0, set = 2, binding = 0) "
             "uniform subpassInput uFb;\n" : "",
         k->fbfetch & HLE_FB_ZEQ ? HLE_ZEQ_DECL_GLSL : "",
+        hilo1 ? "  if (m == 4u) { uvec4 i = uvec4(c * 255.0 + 0.5);\n"
+                "    return vec3(float(i.a << 8 | i.r), float(i.g << 8 | i.b), 65535.0) / 65535.0; }\n" : "",
         k->point_sprite ? "vec4(gl_PointCoord, 1.0, 1.0)" : "vTex3i");
     if (k->wbuf) {
         put(&b, HLE_WBUF_CALC_GLSL);

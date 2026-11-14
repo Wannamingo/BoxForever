@@ -224,6 +224,66 @@ static void test_bumpenv(void)
     HT_CHECK(strstr(buf, "t2.rgb *= clamp(l.x * t1.r + l.y, 0.0, 1.0);") != NULL);
 }
 
+/* Halo 2's scope mask: r0.a = 0.5 - t0.b (HALFBIAS_NEGATE), then a MUX on
+ * its MSB picks black (CD) where t0.b is 0: the bias's 0.5 is 0x80 / 0xFF
+ * in shaders that MUX on the MSB, 0.5 in the others */
+static void test_mux_bias(void)
+{
+    uint32_t rs[HLE_PS_REGS] = { 0 };
+    rs[HLE_PS_TEXMODES] = 1;
+    rs[HLE_PS_ALPHA_IN + 1] = IN4(R_C0 | CH_A, R_ZERO | INVERT, R_T0 | 0xA0, R_ZERO | INVERT);
+    rs[HLE_PS_ALPHA_OUT + 1] = R_R0 << 8;               /* r0.a = C0.a + (0.5 - t0.b) */
+    rs[HLE_PS_RGB_IN + 2] = IN4(R_C0, R_ZERO | INVERT, R_R0, R_ZERO | INVERT);
+    rs[HLE_PS_RGB_OUT + 2] = (R_T1 << 8) | 0x4000;      /* t1 = mux(C0, r0) */
+    rs[HLE_PS_COUNT] = 3 | 0x100;
+    HlePshKey k;
+    hle_psh_key(rs, &k);
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    dump("psh_mux_bias");
+    HT_CHECK(strstr(buf, "float Ca = (-max(t0.b, 0.0) + (128.0 / 255.0));") != NULL);
+    HT_CHECK(strstr(buf, "bool mx = r0.a > 0.5;") != NULL);
+    HT_CHECK(strstr(buf, "vec3 ms = mx ? cd : ab;") != NULL);
+    /* a MUX in the alpha portion only; the output BIAS takes the same 0x80 */
+    rs[HLE_PS_RGB_OUT + 2] = R_T1 << 8;
+    rs[HLE_PS_ALPHA_IN + 2] = IN4(R_C0 | CH_A, R_ZERO | INVERT, R_R0 | CH_A, R_ZERO | INVERT);
+    rs[HLE_PS_ALPHA_OUT + 2] = (R_T1 << 8) | 0x4000;
+    rs[HLE_PS_RGB_IN + 1] = IN4(R_T0 | 0x80, R_ZERO | INVERT, R_ZERO, R_ZERO);  /* HALFBIAS_NORMAL */
+    rs[HLE_PS_RGB_OUT + 1] = (R_R1 << 4) | (3u << 15);  /* SHIFTLEFT_1_BIAS */
+    hle_psh_key(rs, &k);
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    HT_CHECK(strstr(buf, "ams = mx ? acd : aab;") != NULL);
+    HT_CHECK(strstr(buf, "vec3 A = (max(t0.rgb, 0.0) - (128.0 / 255.0));") != NULL);
+    HT_CHECK(strstr(buf, "ab = clamp(((ab - (128.0 / 255.0)) * 2.0), -1.0, 1.0);") != NULL);
+    rs[HLE_PS_RGB_IN + 1] = 0;
+    rs[HLE_PS_RGB_OUT + 1] = 0;
+    rs[HLE_PS_ALPHA_IN + 2] = 0;
+    rs[HLE_PS_ALPHA_OUT + 2] = 0;
+    rs[HLE_PS_RGB_OUT + 2] = (R_T1 << 8) | 0x4000;
+    rs[HLE_PS_COUNT] = 3;                               /* MUX on the LSB */
+    hle_psh_key(rs, &k);
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    HT_CHECK(strstr(buf, "float Ca = (-max(t0.b, 0.0) + 0.5);") != NULL);
+    rs[HLE_PS_COUNT] = 3 | 0x100;
+    rs[HLE_PS_RGB_OUT + 2] = R_T1 << 8;                 /* no MUX: sum */
+    rs[HLE_PS_ALPHA_OUT + 1] = (R_R0 << 8) | (1u << 15);   /* BIAS */
+    hle_psh_key(rs, &k);
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    HT_CHECK(strstr(buf, "float Ca = (-max(t0.b, 0.0) + 0.5);") != NULL);
+    HT_CHECK(strstr(buf, "ams = clamp((ams - 0.5), -1.0, 1.0);") != NULL);
+}
+
+static void test_hilo1(void)
+{
+    HlePshKey k = { 0 };
+    k.dot_map = 4u << 8;
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    HT_CHECK(strstr(buf, "i.a << 8 | i.r") != NULL);
+    HT_CHECK(strstr(buf, "i.g << 8 | i.b") != NULL);
+    k.dot_map = 5u << 8;
+    HT_CHECK(hle_psh_glsl(&k, buf, sizeof(buf), NULL) > 0);
+    HT_CHECK(strstr(buf, "65535.0") == NULL);
+}
+
 static void test_overflow(void)
 {
     uint32_t rs[HLE_PS_REGS] = { 0 };
@@ -238,6 +298,8 @@ int main(void)
     HT_RUN(test_modulate);
     HT_RUN(test_final_fog);
     HT_RUN(test_dot_mux);
+    HT_RUN(test_mux_bias);
+    HT_RUN(test_hilo1);
     HT_RUN(test_reflect);
     HT_RUN(test_shadow_project);
     HT_RUN(test_bumpenv);

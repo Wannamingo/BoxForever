@@ -172,6 +172,19 @@ static void publish(uint64_t v)
     }
 }
 
+static void wait_failed(VkResult result, const char *operation, uint64_t expected)
+{
+    const uint64_t completed = hle_atomic_read(&g_tl.completed);
+    if (completed != UINT64_MAX) {
+        hle_log("hakuX-hle-back",
+                "%s failed (VkResult %d): expected %llu, submitted %llu, completed %llu",
+                operation, result, (unsigned long long)expected,
+                (unsigned long long)hle_atomic_read(&g_tl.submitted),
+                (unsigned long long)completed);
+    }
+    hle_vk_lose(result, operation);
+}
+
 static void *fence_watch_thread(void *opaque)
 {
     for (;;) {
@@ -193,7 +206,7 @@ static void *fence_watch_thread(void *opaque)
             continue;
         }
         if (r != VK_SUCCESS) {
-            hle_vk_lose(r, "vkWaitForFences (render timeline)");
+            wait_failed(r, "vkWaitForFences (render timeline)", value);
             return NULL;
         }
         publish(value);               /* readbacks land before CPU waiters wake */
@@ -286,13 +299,13 @@ static void *watch_thread(void *opaque)
             continue;
         }
         if (r != VK_SUCCESS) {
-            hle_vk_lose(r, "vkWaitSemaphores (timeline)");
+            wait_failed(r, "vkWaitSemaphores (timeline)", want);
             return NULL;
         }
         uint64_t v = 0;
         r = T.vkGetSemaphoreCounterValue(g_hvk.dev, g_tl.sem, &v);
         if (r != VK_SUCCESS) {
-            hle_vk_lose(r, "vkGetSemaphoreCounterValue (timeline)");
+            wait_failed(r, "vkGetSemaphoreCounterValue (timeline)", want);
             return NULL;
         }
         done = v;
@@ -457,13 +470,13 @@ void hle_tl_wait(uint64_t value)
     while (hle_tl_completed() < value) {
         VkResult r = hle_tl_sem_wait(g_tl.sem, value, 100000000ull);
         if (r != VK_SUCCESS && r != VK_TIMEOUT) {
-            hle_vk_lose(r, "vkWaitSemaphores");    /* completed: all (hle_tl_lose) */
+            wait_failed(r, "vkWaitSemaphores", value);
             break;
         }
         uint64_t v = 0;
         r = T.vkGetSemaphoreCounterValue(g_hvk.dev, g_tl.sem, &v);
         if (r != VK_SUCCESS) {
-            hle_vk_lose(r, "vkGetSemaphoreCounterValue");
+            wait_failed(r, "vkGetSemaphoreCounterValue", value);
             break;
         }
         publish(v);
