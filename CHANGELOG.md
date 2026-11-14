@@ -1,5 +1,12 @@
 # Changelog
 
+## HakuX-Mali 1.8 — 2026-11-14
+
+- Bundled Unified 0.4.53 with Android 12+ support and fixes for non-power-of-two vertex attribute divisors.
+- Added in-game restart to apply graphics settings without going back to the library. Fixed scrolling in the pause panel.
+- Added half-step internal resolution. Fixed Halo 2 fog and scope graphics, improved Vulkan timeline diagnostics, and ported HakuX-Advanced rendering and update fixes.
+- [Русский](releases/1.8.ru.md) · [English](releases/1.8.en.md)
+
 ## HakuX-Mali 1.0 — 2026-10-30
 
 - Artwork update (Android build 15): supplied HX launcher icon and GitHub banner, including both language pages. Corresponding sources: `v1.0-branding.1`.

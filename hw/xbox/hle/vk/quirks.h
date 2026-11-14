@@ -18,6 +18,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Identify the selected MaliSX2 or Unified ICD independently of its package name. */
+bool hle_vk_is_malisx2(const VkPhysicalDeviceProperties *props,
+                       const VkPhysicalDeviceDriverProperties *drv);
+
 enum {
     /* Binding a pipeline drops the dynamic vertex input: a draw whose input
      * equals the last one's (so the back end does not record it again)

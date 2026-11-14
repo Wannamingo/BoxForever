@@ -4,9 +4,16 @@
 
 ![HakuX-Mali](assets/branding/hakux-mali-banner.png)
 
-An Android Mali fork of the Xbox emulator [hakuX](https://github.com/rfandango/hakuX). **Latest stable version: 1.7.1/code31 for ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate.** Based on hakuX 1.2.0.
+An Android Mali fork of the Xbox emulator hakuX. **Latest release — HakuX-Mali 1.8 (code40).** Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
 
-**[Download APK 1.7.1](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.7.1/HakuX-Mali-1.7.1-release.apk)** · **[Release 1.7.1: source and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.7.1)** · **[All changes](releases/1.7.1.en.md)**
+**[Download APK 1.8](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.8/HakuX-Mali-1.8-release.apk)** · **[Release 1.8 and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.8)** · **[All changes](releases/1.8.en.md)**
+
+## New in 1.8
+
+- Bundles **Unified 0.4.53** for ARM64 and Android 12+. Select it under **Settings → Graphics → GPU driver**. The same menu offers the system driver, earlier builds and ZIP import.
+- **Restart** launches the game with current settings without returning to the library. The pause-menu header stays fixed while the actions scroll inside the panel.
+- Internal resolution now changes in **0.5×** steps. Halo 2 fog and scope graphics have been fixed. Vulkan synchronization diagnostics now provide more detail.
+- Unified 0.4.53 passed 156 rendering cases each on RG477M, RG476H and RG Rotate. A Need for Speed: Most Wanted race also loaded from a save state on all three.
 
 ## New in 1.7.1
 

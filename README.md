@@ -4,9 +4,16 @@
 
 ![HakuX-Mali](assets/branding/hakux-mali-banner.png)
 
-Форк Xbox-эмулятора [hakuX](https://github.com/rfandango/hakuX) для Android с Mali. **Последняя стабильная версия — 1.7.1/code31: ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate.** Основа — hakuX 1.2.0.
+Форк Xbox-эмулятора для Android с Mali на основе hakuX. **Последний релиз — HakuX-Mali 1.8 (code40).** Поддерживаются ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate. [Исходный hakuX](https://github.com/rfandango/hakuX)
 
-**[Скачать APK 1.7.1](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.7.1/HakuX-Mali-1.7.1-release.apk)** · **[Релиз 1.7.1: исходники и контрольные суммы](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.7.1)** · **[Все нововведения](releases/1.7.1.ru.md)**
+**[Скачать APK 1.8](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.8/HakuX-Mali-1.8-release.apk)** · **[Релиз 1.8 и контрольные суммы](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.8)** · **[Все изменения](releases/1.8.ru.md)**
+
+## Новое в 1.8
+
+- Встроен **Unified 0.4.53** для ARM64 и Android 12+. Выберите его в **Настройки → Графика → Драйвер GPU**. Системный драйвер, прежние версии и импорт ZIP доступны в том же меню.
+- Кнопка **«Перезагрузить»** запускает игру с актуальными параметрами без выхода в библиотеку. Заголовок меню паузы закреплён, список действий прокручивается внутри рамки.
+- Внутреннее разрешение меняется с шагом **0,5×**. Исправлены туман и прицел в Halo 2. Расширена диагностика ошибок синхронизации Vulkan.
+- Unified 0.4.53 прошёл 156 проверок отрисовки на каждой из трёх консолей — RG477M, RG476H и RG Rotate. На них также проверена загрузка гонки NFS Most Wanted из слота.
 
 ## Новое в 1.7.1
 

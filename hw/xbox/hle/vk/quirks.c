@@ -83,6 +83,13 @@ static bool malisx2(const HleDriver *d)
     return mali(d) && strstr(d->drv.driverInfo, "malisx2");
 }
 
+bool hle_vk_is_malisx2(const VkPhysicalDeviceProperties *props,
+                       const VkPhysicalDeviceDriverProperties *drv)
+{
+    HleDriver d = { .props = *props, .drv = *drv };
+    return malisx2(&d) || unified(&d);
+}
+
 static bool arm_blob(const HleDriver *d)
 {
     return mali(d) && arm_proprietary(d) && !malisx2(d) && !unified(d);

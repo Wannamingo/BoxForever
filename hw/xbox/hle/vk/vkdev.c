@@ -298,7 +298,7 @@ int hle_vk_init(void)
             has_ext(ext, ne, VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME)) {
             vkGetPhysicalDeviceProperties2(v->phys, &dp);
         }
-        if (!strstr(drv.driverInfo, "malisx2")) {
+        if (!hle_vk_is_malisx2(&v->props, &drv)) {
             snprintf(g_hle_unavailable, sizeof(g_hle_unavailable),
                      "did not load MaliSX2 (the Android loader selected a different driver)");
             hle_log("hakuX-hle-back", "%s", g_hle_unavailable);
@@ -306,7 +306,7 @@ int hle_vk_init(void)
             v->inst = VK_NULL_HANDLE;
             return -2;
         }
-        hle_log("hakuX-hle-back", "MaliSX2 active: %s", drv.driverInfo);
+        hle_log("hakuX-hle-back", "MaliSX2/Unified active: %s", drv.driverInfo);
     }
     bool e_vids = has_ext(ext, ne, VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     bool e_eds2 = has_ext(ext, ne, VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME);

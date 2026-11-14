@@ -33,3 +33,14 @@ G52/G57 remain at Vulkan 1.1; public AHB is not enabled on those architectures.
 All devices can manually select/import packages; actual GPU/kernel/Android compatibility still applies.
 The three earlier packages and automatic-choice policy are retained unchanged.
 Source, provenance, qualification matrix and original licenses are included in the driver ZIP.
+
+Additional testing bundle: Unified 0.4.50, Android 12+/API31, ARM64.
+Library SHA-256: 68d30c7ca6c5deca4ac047c304874ef0072cc455c692549ca7c42622f428b25a.
+The archive includes the driver patch, build provenance, and license notices.
+Available as a manual choice alongside the earlier bundled drivers.
+
+Unified 0.4.53, Android 12+/API31, ARM64.
+Source and original archive: https://github.com/Wannamingo/Unified/releases/tag/v0.4.53
+Source revision: 7e90a2459b77b6e6968e28c226e8bb50efc1f126.
+Library SHA-256: e4627c2637e536b04c9614b8f9638fbcec645c383a4c8147593cfa31fc7341be.
+Original notices and license texts are inside the archive.
