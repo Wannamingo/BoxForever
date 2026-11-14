@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -26,25 +27,36 @@ class PauseMenu(private val context: Context, gameTitle: String?, actions: List<
   private fun background(fill: Int, outline: Int) = GradientDrawable().apply {
     setColor(fill); cornerRadius = dp(18).toFloat(); setStroke(dp(1), outline)
   }
-  val view = ScrollView(context).apply {
-    isFillViewport = true
-    background = background(if (dark) Color.rgb(15, 23, 17) else Color.rgb(246, 250, 245), accent)
+  val view = FrameLayout(context).apply {
+    setPadding(dp(10), dp(10), dp(10), dp(10))
   }
   private val buttons = ArrayList<Button>()
   var onAction: ((() -> Unit) -> Unit)? = null
 
   init {
-    val column = LinearLayout(context).apply {
-      orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(22), dp(18), dp(22))
+    val panel = LinearLayout(context).apply {
+      orientation = LinearLayout.VERTICAL
+      setPadding(dp(18), dp(18), dp(18), dp(18))
+      background = background(if (dark) Color.rgb(15, 23, 17) else Color.rgb(246, 250, 245), accent)
+      clipToOutline = true
     }
-    view.addView(column, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+    view.addView(panel, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     val header = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
     header.addView(ImageView(context).apply { setImageResource(R.mipmap.ic_launcher); importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO }, LinearLayout.LayoutParams(dp(48), dp(48)))
     val titles = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
     titles.addView(TextView(context).apply { text = context.getString(R.string.ui_pause_title); textSize = 20f; setTextColor(menuTextColor); setTypeface(typeface, Typeface.BOLD) })
     if (!gameTitle.isNullOrBlank()) titles.addView(TextView(context).apply { text = gameTitle; textSize = 14f; setTextColor(accent); maxLines = 2 })
     header.addView(titles, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-    column.addView(header, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(18) })
+    panel.addView(header, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(14) })
+
+    val scroll = ScrollView(context).apply {
+      isFillViewport = true
+      isScrollbarFadingEnabled = false
+      scrollBarStyle = android.view.View.SCROLLBARS_INSIDE_INSET
+    }
+    panel.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+    val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    scroll.addView(column, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     for ((index, item) in actions.withIndex()) {
       val button = Button(context).apply {
         text = item.first; isAllCaps = false; textSize = 16f; gravity = Gravity.CENTER_VERTICAL or Gravity.START
@@ -57,7 +69,9 @@ class PauseMenu(private val context: Context, gameTitle: String?, actions: List<
         setOnClickListener { onAction?.invoke(item.second) }
       }
       buttons += button
-      column.addView(button, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
+      column.addView(button, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+        if (index < actions.lastIndex) bottomMargin = dp(8)
+      })
     }
   }
 
