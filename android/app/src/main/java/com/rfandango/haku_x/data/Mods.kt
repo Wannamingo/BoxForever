@@ -48,17 +48,20 @@ object ModCatalog {
   private fun folder(context: Context, gameKey: String) = folders(context)[gameKey.uppercase(Locale.ROOT)]
 
   /** Whether the disc with this game key has mods or cheats. */
-  fun has(context: Context, gameKey: String) = folder(context, gameKey) != null
+  fun has(context: Context, gameKey: String) = !load(context, gameKey).isEmpty
+
+  fun userRoot(context: Context) = File(context.filesDir, "user_mods")
 
   /** The disc's mods (by folder name) and cheats (in file order). */
   fun load(context: Context, gameKey: String): GameMods {
-    val dir = folder(context, gameKey) ?: return GameMods(emptyList(), emptyList())
+    val dir = folder(context, gameKey)
     val am = context.assets
     val base = "$ROOT/$dir"
-    val mods = am.list(base).orEmpty().sorted().mapNotNull { id ->
+    val mods = (if (dir == null) emptyList() else am.list(base).orEmpty().sorted().mapNotNull { id ->
       text(am, "$base/$id/mod.txt")?.let { parseMod(id, it) }
-    }
-    val cheats = text(am, "$base/cheats.txt")?.let { parseCheats(it) }.orEmpty()
+    }) + UserModPack.mods(userRoot(context), gameKey)
+    val builtInCheats = if (dir == null) emptyList() else text(am, "$base/cheats.txt")?.let { parseCheats(it) }.orEmpty()
+    val cheats = (builtInCheats + UserModPack.cheats(userRoot(context), gameKey)).associateBy { it.name }.values.toList()
     return GameMods(mods, cheats)
   }
 
@@ -74,7 +77,7 @@ object ModCatalog {
     return if (key.all { it.isLetter() }) key to line.substring(colon + 1).trim() else null
   }
 
-  private fun parseMod(id: String, text: String): ModInfo {
+  internal fun parseMod(id: String, text: String): ModInfo {
     val fields = mutableMapOf<String, String>()
     val patches = mutableListOf<Pair<String, String>>()
     var xbe: String? = null
@@ -101,7 +104,7 @@ object ModCatalog {
     )
   }
 
-  private fun parseCheats(text: String): List<CheatInfo> {
+  internal fun parseCheats(text: String): List<CheatInfo> {
     val out = mutableListOf<CheatInfo>()
     var name: String? = null
     var note = ""
@@ -138,6 +141,7 @@ object ModCatalog {
    * paths and host files.
    */
   fun extract(context: Context, gameKey: String, mod: String): List<Pair<String, File>> {
+    if (mod.startsWith(UserModPack.PREFIX)) return UserModPack.files(userRoot(context), gameKey, mod)
     val dir = folder(context, gameKey) ?: return emptyList()
     val am = context.assets
     val src = "$ROOT/$dir/$mod/files"

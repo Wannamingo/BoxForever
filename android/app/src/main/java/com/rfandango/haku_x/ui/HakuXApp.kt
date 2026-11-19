@@ -11,6 +11,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rfandango.haku_x.ui.library.LibraryViewModel
+import com.rfandango.haku_x.ui.library.GameDetailsScreen
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,6 +49,8 @@ private object Routes {
   const val MIGRATE_AGAIN = "migrate_again"
   const val SETUP = "setup"
   const val LIBRARY = "library"
+  const val DETAILS = "game_details?uri={uri}"
+  fun details(game: Game) = "game_details?uri=${Uri.encode(game.uri.toString())}"
   const val SETTINGS = "settings"
   const val CONTROLS = "controls"
   const val CONTROLLERS = "controllers"
@@ -81,6 +87,8 @@ fun HakuXApp(
   onLaunchState: (Game, SaveStateStore, Int) -> Unit,
 ) {
   val nav = rememberNavController()
+  val library: LibraryViewModel = viewModel()
+  val libraryState by library.state.collectAsStateWithLifecycle()
   var settingsGameKey by rememberSaveable { mutableStateOf("") }
   var settingsGameTitle by rememberSaveable { mutableStateOf("") }
   var initialSettingsOpened by rememberSaveable { mutableStateOf(false) }
@@ -145,16 +153,25 @@ fun HakuXApp(
         onLaunch = onLaunchGame,
         onLoadState = onLaunchState,
         onOpenSettings = { nav.navigate(Routes.SETTINGS) },
-        onGameSettings = { game, disc ->
-          val key = GameOverrides.gameKey(disc?.titleId ?: 0L, disc?.version ?: 0L, game.relativePath)
+        onOpenGame = { game, _ -> nav.navigate(Routes.details(game)) },
+        vm = library,
+      )
+    }
+    composable(Routes.DETAILS, arguments = listOf(navArgument("uri") { type = NavType.StringType })) { entry ->
+      val game = libraryState.games.firstOrNull { it.uri.toString() == entry.arguments?.getString("uri") }
+      LaunchedEffect(Unit) { library.onResume() }
+      GameDetailsScreen(game, libraryState.info[game?.uri], libraryState.icons[game?.uri], libraryState.loading,
+        onBack = { nav.popBackStack() }, onLaunch = onLaunchGame, onLoadState = onLaunchState,
+        onSettings = { selected, disc ->
+          val key = GameOverrides.gameKey(disc?.titleId ?: 0L, disc?.version ?: 0L, selected.relativePath)
           settingsGameKey = key
-          settingsGameTitle = game.title
-          nav.navigate(Routes.game(key, game.title))
+          settingsGameTitle = selected.title
+          nav.navigate(Routes.game(key, selected.title))
         },
-        onMods = { game, disc ->
-          val key = GameOverrides.gameKey(disc.titleId, disc.version, game.relativePath)
-          nav.navigate(Routes.mods(key, game.title))
+        onMods = { selected, disc ->
+          nav.navigate(Routes.mods(GameOverrides.gameKey(disc.titleId, disc.version, selected.relativePath), selected.title))
         },
+        onConvert = { selected -> library.askConvert(selected); nav.popBackStack() },
       )
     }
     composable(

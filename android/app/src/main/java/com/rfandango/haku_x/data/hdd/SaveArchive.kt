@@ -3,6 +3,7 @@ package com.rfandango.haku_x.data.hdd
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -18,7 +19,7 @@ import java.util.zip.ZipOutputStream
  */
 object SaveArchive {
   /** A title's folder (E:\UDATA\<title id>) and which of its save folders to write: null, all of them. */
-  class Pick(val title: File, val saves: List<File>? = null)
+  class Pick(val title: File, val saves: List<File>? = null, val area: String = "UDATA")
 
   /** The picks written to out as a zip; the number of files in it. */
   fun write(out: OutputStream, picks: List<Pick>): Int {
@@ -43,7 +44,8 @@ object SaveArchive {
       }
 
       for (p in picks) {
-        val base = "UDATA/${p.title.name}"
+        require(p.area == "UDATA" || p.area == "TDATA")
+        val base = "${p.area}/${p.title.name}"
         add(base, p.title)
         for (f in p.title.listFiles().orEmpty().sortedBy { it.name }) {
           when {
@@ -92,7 +94,8 @@ object SaveArchive {
     val i = parts.indexOfFirst { TITLE.matches(it) }
     if (i < 0) return null
     val rest = parts.drop(i + 1)
-    if (rest.any { it == "." || it == ".." || it.length > 42 }) return null   // FATX names: 42 characters
+    if (e.name.length > 1024 || rest.size > 64 || rest.any { it == "." || it == ".." || it.length > 42 ||
+        it.any { c -> c.code < 32 || c in "<>:\"|?*" } || it.endsWith('.') || it.endsWith(' ') }) return null
     if (rest.isEmpty() && !e.isDirectory) return null
     val area = if (i > 0 && parts[i - 1].equals("TDATA", ignoreCase = true)) "TDATA" else "UDATA"
     return Place(area, parts[i].lowercase(), rest, e.isDirectory)
@@ -102,14 +105,41 @@ object SaveArchive {
    * Each entry of a zip with its place on E: (null: not in a title's folder). A hakuX marker isn't one;
    * the zip's kind is returned. In a backup, only E:'s entries count.
    */
-  private inline fun entries(input: InputStream, each: (ZipInputStream, ZipEntry, Place?) -> Unit): String? {
+  private class LimitedZip(input: InputStream, private val limit: Long) : ZipInputStream(input) {
+    private var total = 0L
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+      val n = super.read(buffer, offset, length)
+      if (n > 0) {
+        total += n
+        require(total <= limit) { "Save data is too large" }
+      }
+      return n
+    }
+  }
+
+  private fun readSmall(input: InputStream, limit: Int): ByteArray {
+    val out = ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    while (true) {
+      val n = input.read(buffer)
+      if (n < 0) break
+      require(out.size() + n <= limit) { "Saved-data metadata is too large" }
+      out.write(buffer, 0, n)
+    }
+    return out.toByteArray()
+  }
+
+  private inline fun entries(input: InputStream, maxBytes: Long = Long.MAX_VALUE,
+    each: (ZipInputStream, ZipEntry, Place?) -> Unit): String? {
     var kind: String? = null
-    ZipInputStream(input.buffered()).use { z ->
+    LimitedZip(input.buffered(), maxBytes).use { z ->
       var first = true
+      var count = 0
       while (true) {
         val en = z.nextEntry ?: break
+        if (maxBytes != Long.MAX_VALUE) require(++count <= 50_000) { "Too many saved-data entries" }
         if (first && en.name == Backup.MARKER) {
-          kind = Backup.parse(z).kind
+          kind = Backup.parse(readSmall(z, 64 * 1024).inputStream()).kind
           first = false
           continue
         }
@@ -126,14 +156,15 @@ object SaveArchive {
     dir.listFiles()?.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: File(dir, name)
 
   /** What importing the zip in input into E: (partition 1's folder) would do. */
-  fun plan(input: InputStream, e: File): Plan {
+  fun plan(input: InputStream, e: File, titleId: String? = null, maxBytes: Long = Long.MAX_VALUE): Plan {
+    require(titleId == null || TITLE.matches(titleId))
     val saves = LinkedHashMap<String, MutableSet<String>>()
     val titles = LinkedHashSet<String>()
     val names = HashMap<String, String>()
     val skipped = ArrayList<String>()
     var files = 0
-    val kind = entries(input) { z, en, p ->
-      if (p == null) {
+    val kind = entries(input, maxBytes) { z, en, p ->
+      if (p == null || (titleId != null && !p.title.equals(titleId, ignoreCase = true))) {
         if (!en.isDirectory) skipped += en.name
         return@entries
       }
@@ -141,7 +172,8 @@ object SaveArchive {
       titles += p.title
       p.save?.let { saves.getOrPut(p.title) { LinkedHashSet() } += it.lowercase() }
       if (p.area == "UDATA" && p.rest.size == 1 && p.rest[0].equals("TitleMeta.xbx", ignoreCase = true)) {
-        HddStore.meta(z.readBytes(), "TitleName")?.let { names[p.title] = it }
+        val metadata = readSmall(z, 1024 * 1024)
+        HddStore.meta(metadata, "TitleName")?.let { names[p.title] = it }
       }
     }
     val udata = child(e, "UDATA")
@@ -153,14 +185,16 @@ object SaveArchive {
   }
 
   /** The zip in input imported into E: (partition 1's folder); each of its saves replaces the disk's. */
-  fun extract(input: InputStream, e: File): Result {
+  fun extract(input: InputStream, e: File, titleId: String? = null, maxBytes: Long = Long.MAX_VALUE): Result {
+    require(titleId == null || TITLE.matches(titleId))
+    var bytes = 0L
     val root = e.canonicalPath + File.separator
     val cleared = HashMap<String, File>()   // "<title>/<save>" to the save's folder, emptied once
     val dirTimes = HashMap<File, Long>()
     val skipped = ArrayList<String>()
     val written = ArrayList<File>()
-    entries(input) { z, en, p ->
-      if (p == null) {
+    entries(input, maxBytes) { z, en, p ->
+      if (p == null || (titleId != null && !p.title.equals(titleId, ignoreCase = true))) {
         if (!en.isDirectory) skipped += en.name
         return@entries
       }
@@ -181,7 +215,16 @@ object SaveArchive {
         return@entries
       }
       val f = child(dir, p.rest.last())
-      f.outputStream().use { z.copyTo(it) }
+      f.outputStream().use { out ->
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+          val n = z.read(buffer)
+          if (n < 0) break
+          bytes += n
+          require(bytes <= maxBytes) { "Save data is too large" }
+          out.write(buffer, 0, n)
+        }
+      }
       if (en.time != -1L) f.setLastModified(en.time)
       written += f
     }

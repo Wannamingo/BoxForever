@@ -2,9 +2,6 @@ package com.rfandango.haku_x.ui.library
 
 import android.content.res.Configuration
 import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import android.text.format.Formatter
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -38,15 +35,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -67,7 +58,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -114,12 +104,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rfandango.haku_x.R
 import com.rfandango.haku_x.data.DiscInfo
 import com.rfandango.haku_x.data.Game
-import com.rfandango.haku_x.data.GameOverrides
 import com.rfandango.haku_x.data.LibraryPresentation
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.rfandango.haku_x.data.ModCatalog
 import com.rfandango.haku_x.data.SaveStateStore
 import com.rfandango.haku_x.data.Updates
 import com.rfandango.haku_x.data.XisoConverter
@@ -135,11 +120,9 @@ import com.rfandango.haku_x.ui.update.UpdateDialog
 fun LibraryScreen(
   onLaunch: (Game) -> Unit,
   onOpenSettings: () -> Unit,
-  onGameSettings: (Game, DiscInfo?) -> Unit,
+  onOpenGame: (Game, DiscInfo?) -> Unit,
   /** Start the game right into a savestate: its store and slot. */
   onLoadState: (Game, SaveStateStore, Int) -> Unit,
-  /** The game's mods and cheats (a disc whose title has some, mods/). */
-  onMods: (Game, DiscInfo) -> Unit,
   vm: LibraryViewModel = viewModel(),
 ) {
   val state by vm.state.collectAsStateWithLifecycle()
@@ -147,19 +130,8 @@ fun LibraryScreen(
   val presentation = remember { LibraryPresentation(context) }
   var covers by remember { mutableStateOf(presentation.covers) }
   var coverSize by remember { mutableIntStateOf(presentation.coverSize) }
-  var coverRevision by remember { mutableIntStateOf(0) }
+  val coverRevision = 0
   var showCoverSize by remember { mutableStateOf(false) }
-  var coverForUri by rememberSaveable { mutableStateOf<String?>(null) }
-  val coverScope = rememberCoroutineScope()
-  val pickCover = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-    val game = state.games.firstOrNull { it.uri.toString() == coverForUri }
-    coverForUri = null
-    if (uri != null && game != null) coverScope.launch {
-      val result = withContext(Dispatchers.IO) { runCatching { presentation.importCover(game, state.info[game.uri], uri) } }
-      if (result.isSuccess) coverRevision++
-      else Toast.makeText(context, R.string.ui_library_cover_error, Toast.LENGTH_LONG).show()
-    }
-  }
   if (showCoverSize) com.rfandango.haku_x.ui.common.ChoiceDialog(
     title = stringResource(R.string.ui_library_cover_size),
     options = listOf(0 to stringResource(R.string.ui_library_cover_small),
@@ -229,13 +201,9 @@ fun LibraryScreen(
             TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.settings_games_folder_title)) }
           }
           games.isEmpty() -> Message(stringResource(R.string.library_empty_games))
-          else -> GameList(games, state.info, state.icons, onLaunch, onGameSettings, onLoadState, onMods, vm::askConvert,
+          else -> GameList(games, state.info, state.icons, onLaunch, onOpenGame, onLoadState,
             covers, coverSize, presentation, coverRevision,
             if (state.query.isBlank()) presentation.recent.mapNotNull { uri -> games.firstOrNull { it.uri.toString() == uri } } else emptyList(),
-            onPickCover = { game -> coverForUri = game.uri.toString(); pickCover.launch(arrayOf("image/*")) },
-            onRemoveCover = { game -> coverScope.launch {
-              withContext(Dispatchers.IO) { presentation.coverFile(game, state.info[game.uri]).delete() }; coverRevision++
-            } },
           )
         }
       }
@@ -259,9 +227,9 @@ fun LibraryScreen(
  * compiled ahead of time), so each card is kept cheap to compose: a bordered
  * box rather than an OutlinedCard's Surface, its icon a bitmap the view model
  * decoded, the ID and the region flags one text, painters and strings shared
- * by every card, and the long-press menu composed only while it is open.
+ * by every card, and game details opened only on demand.
  * With a controller the focused card is outlined in green; A opens its launch choices,
- * Y or select (or holding A) opens its menu.
+ * Y or select (or holding A) opens its details screen.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -270,24 +238,15 @@ private fun GameList(
   info: Map<Uri, DiscInfo>,
   icons: Map<Uri, ImageBitmap>,
   onLaunch: (Game) -> Unit,
-  onGameSettings: (Game, DiscInfo?) -> Unit,
+  onOpenGame: (Game, DiscInfo?) -> Unit,
   onLoadState: (Game, SaveStateStore, Int) -> Unit,
-  onMods: (Game, DiscInfo) -> Unit,
-  onConvert: (Game) -> Unit,
   covers: Boolean,
   coverSize: Int,
   presentation: LibraryPresentation,
   coverRevision: Int,
   recent: List<Game>,
-  onPickCover: (Game) -> Unit,
-  onRemoveCover: (Game) -> Unit,
 ) {
-  // The game whose long-press menu is open.
-  var menuFor by remember { mutableStateOf<Uri?>(null) }
-  // The game whose savestates are listed (the menu's Load state), with its store.
-  var statesFor by remember { mutableStateOf<Pair<Game, SaveStateStore>?>(null) }
   var launchFor by remember { mutableStateOf<Game?>(null) }
-  val context = LocalContext.current
   fun launchGame(game: Game) {
     launchFor = game
   }
@@ -314,7 +273,16 @@ private fun GameList(
             var focused by remember { mutableStateOf(false) }
             Column(Modifier.width(112.dp).clip(shape)
               .border(if (focused) 2.dp else 1.dp, if (focused) colors.primary else colors.outlineVariant, shape)
-              .onFocusChanged { focused = it.isFocused }.combinedClickable(onClick = { launchGame(game) }).padding(6.dp)) {
+              .onFocusChanged { focused = it.isFocused }
+              .onKeyEvent { e ->
+                if (e.key != Key.ButtonY && e.key != Key.Menu) return@onKeyEvent false
+                if (e.type == KeyEventType.KeyUp) onOpenGame(game, info[game.uri])
+                true
+              }
+              .combinedClickable(onClick = { launchGame(game) }, onLongClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onOpenGame(game, info[game.uri])
+              }).padding(6.dp)) {
               GameCover(game, info[game.uri], icons[game.uri], presentation, coverRevision, Modifier.fillMaxWidth().aspectRatio(2f / 3f))
               Text(game.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 6.dp))
@@ -338,14 +306,14 @@ private fun GameList(
             // a controller's Y, or its select (sent as Menu), opens the menu
             .onKeyEvent { e ->
               if (e.key != Key.ButtonY && e.key != Key.Menu) return@onKeyEvent false
-              if (e.type == KeyEventType.KeyUp) menuFor = game.uri
+              if (e.type == KeyEventType.KeyUp) onOpenGame(game, disc)
               true
             }
             .combinedClickable(
               onClick = { launchGame(game) },
               onLongClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                menuFor = game.uri
+                onOpenGame(game, disc)
               },
             )
             .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
@@ -364,62 +332,7 @@ private fun GameList(
             }
           }
         }
-        if (menuFor == game.uri) {
-          // the key its settings use: its savestates' (SaveStateStore) and its mods' (mods/)
-          val key = remember(game.uri, disc) {
-            GameOverrides.gameKey(disc?.titleId ?: 0L, disc?.version ?: 0L, game.relativePath)
-          }
-          val store = remember(key) { SaveStateStore(context, key, game.uri.toString()) }
-          val hasStates = remember(store) { store.saved().isNotEmpty() }
-          DropdownMenu(expanded = true, onDismissRequest = { menuFor = null }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.ui_library_set_cover)) },
-              onClick = { menuFor = null; onPickCover(game) })
-            if (presentation.coverFile(game, disc).isFile) DropdownMenuItem(
-              text = { Text(stringResource(R.string.ui_library_remove_cover)) },
-              onClick = { menuFor = null; onRemoveCover(game) })
 
-            DropdownMenuItem(
-              text = { Text(stringResource(R.string.library_menu_settings)) },
-              leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-              modifier = Modifier.focusRequester(rememberFocusOnShow()),
-              onClick = {
-                menuFor = null
-                onGameSettings(game, disc)
-              },
-            )
-            if (hasStates) {
-              DropdownMenuItem(
-                text = { Text(stringResource(R.string.library_menu_load_state)) },
-                leadingIcon = { Icon(Icons.Filled.PlayArrow, contentDescription = null) },
-                onClick = {
-                  menuFor = null
-                  statesFor = game to store
-                },
-              )
-            }
-            if (disc != null && ModCatalog.has(context, key)) {
-              DropdownMenuItem(
-                text = { Text(stringResource(R.string.library_menu_mods)) },
-                leadingIcon = { Icon(Icons.Filled.Star, contentDescription = null) },
-                onClick = {
-                  menuFor = null
-                  onMods(game, disc)
-                },
-              )
-            }
-            // A full dump (the video partition first) can become an XISO.
-            if (disc?.isFullDump == true && game.kind == com.rfandango.haku_x.data.GameKind.IMAGE) {
-              DropdownMenuItem(
-                text = { Text(stringResource(R.string.library_menu_convert)) },
-                leadingIcon = { Icon(Icons.Filled.Build, contentDescription = null) },
-                onClick = {
-                  menuFor = null
-                  onConvert(game)
-                },
-              )
-            }
-          }
-        }
       }
     }
   }
@@ -432,17 +345,7 @@ private fun GameList(
       onDismiss = { launchFor = null },
     )
   }
-  statesFor?.let { (game, store) ->
-    LoadStatesDialog(
-      title = game.title,
-      store = store,
-      onLoad = { slot ->
-        statesFor = null
-        onLoadState(game, store, slot)
-      },
-      onDismiss = { statesFor = null },
-    )
-  }
+
 }
 
 /**

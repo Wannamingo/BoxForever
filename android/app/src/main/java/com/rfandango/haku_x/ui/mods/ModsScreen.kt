@@ -5,14 +5,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rfandango.haku_x.ui.common.ActionItem
+import com.rfandango.haku_x.ui.common.ConfirmDialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.rfandango.haku_x.R
-import com.rfandango.haku_x.data.ModCatalog
 import com.rfandango.haku_x.data.ModChoices
 import com.rfandango.haku_x.ui.common.EmptyText
 import com.rfandango.haku_x.ui.common.Hint
@@ -26,17 +37,42 @@ import com.rfandango.haku_x.ui.common.SwitchItem
  * menu while it runs.
  */
 @Composable
-fun ModsScreen(gameKey: String, title: String, onBack: () -> Unit) {
+fun ModsScreen(gameKey: String, title: String, onBack: () -> Unit, vm: ModsViewModel = viewModel()) {
   val context = LocalContext.current
-  val game = remember(gameKey) { ModCatalog.load(context, gameKey) }
+  val game by vm.game.collectAsStateWithLifecycle()
+  val busy by vm.busy.collectAsStateWithLifecycle()
+  val notice by vm.notice.collectAsStateWithLifecycle()
+  val hasUserContent by vm.hasUserContent.collectAsStateWithLifecycle()
+  val snackbar = remember { SnackbarHostState() }
+  LaunchedEffect(gameKey) { vm.load(gameKey) }
+  LaunchedEffect(notice) { notice?.let { snackbar.showSnackbar(it); vm.clearNotice() } }
+  var pending by rememberSaveable { mutableStateOf<String?>(null) }
+  var importingCheats by rememberSaveable { mutableStateOf(false) }
+  var remove by rememberSaveable { mutableStateOf(false) }
+  val pickMod = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    if (uri != null) { importingCheats = false; pending = uri.toString() }
+  }
+  val pickCheats = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    if (uri != null) { importingCheats = true; pending = uri.toString() }
+  }
   val choices = remember(gameKey) { ModChoices(context, gameKey) }
-  val mods = remember(gameKey) { mutableStateMapOf<String, Boolean>().apply { game.mods.forEach { put(it.id, choices.mod(it.id)) } } }
-  val cheats = remember(gameKey) {
+  val mods = remember(gameKey, game) { mutableStateMapOf<String, Boolean>().apply { game.mods.forEach { put(it.id, choices.mod(it.id)) } } }
+  val cheats = remember(gameKey, game) {
     mutableStateMapOf<String, Boolean>().apply { game.cheats.forEach { put(it.name, choices.cheat(it.name)) } }
   }
 
-  SubScreen(title = stringResource(R.string.mods_title), subtitle = title, onBack = onBack) { padding ->
+  SubScreen(title = stringResource(R.string.mods_title), subtitle = title, onBack = onBack, snackbar = snackbar) { padding ->
     Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+      Hint(stringResource(R.string.game_mods_format, gameKey))
+      ActionItem(stringResource(R.string.game_mods_import), stringResource(R.string.game_mods_import_desc), null, enabled = !busy) {
+        pickMod.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+      }
+      ActionItem(stringResource(R.string.game_cheats_import), stringResource(R.string.game_cheats_import_desc), null, enabled = !busy) {
+        pickCheats.launch(arrayOf("text/plain", "application/octet-stream"))
+      }
+      if (hasUserContent) {
+        ActionItem(stringResource(R.string.game_mods_remove), null, null, enabled = !busy) { remove = true }
+      }
       if (game.isEmpty) {
         EmptyText(stringResource(R.string.mods_none))
       }
@@ -73,4 +109,14 @@ fun ModsScreen(gameKey: String, title: String, onBack: () -> Unit) {
       }
     }
   }
+  pending?.let { uri ->
+    ConfirmDialog(title = stringResource(if (importingCheats) R.string.game_cheats_import else R.string.game_mods_import),
+      text = stringResource(R.string.game_mods_confirm, title, gameKey), confirm = stringResource(R.string.hdd_saves_import_go),
+      onConfirm = { pending = null; vm.install(gameKey, Uri.parse(uri), importingCheats) }, onDismiss = { pending = null })
+  }
+  if (remove) ConfirmDialog(title = stringResource(R.string.game_mods_remove), text = stringResource(R.string.game_mods_remove_desc),
+    confirm = stringResource(R.string.common_delete), onConfirm = { remove = false; vm.removeUserContent(gameKey) }, onDismiss = { remove = false })
+  if (busy) AlertDialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+    title = { Text(stringResource(R.string.game_mods_working)) }, text = { LinearProgressIndicator(Modifier.fillMaxWidth()) }, confirmButton = {})
+
 }

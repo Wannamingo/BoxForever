@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="game_details_title">Страница игры</string>
+  <string name="game_details_unavailable">Игра недоступна. Вернитесь в библиотеку и обновите список.</string>
+  <string name="game_details_play">Играть</string>
+  <string name="game_details_settings_desc">Индивидуальные настройки графики, экрана, управления и Xbox</string>
+  <string name="game_details_mods_desc">Встроенные и импортированные моды и читы hakuX для этой версии игры</string>
+  <string name="game_details_states_desc">Загрузить состояние эмулятора из автоматического, быстрого или ручного слота</string>
+  <string name="game_details_wait_id">Для управления модами и игровыми данными нужно прочитать ID диска.</string>
+  <string name="game_details_library">Библиотека</string>
+  <string name="game_data_title">Игровые данные</string>
+  <string name="game_data_desc">Игровые сохранения и данные игры (UDATA и TDATA). Состояния эмулятора хранятся отдельно. Перед переносом данных завершите запущенную игру.</string>
+  <string name="game_data_export">Экспорт игровых данных</string>
+  <string name="game_data_export_desc">Выберите место для ZIP-копии данных этой игры</string>
+  <string name="game_data_import">Импорт игровых данных</string>
+  <string name="game_data_import_desc">Восстановить данные этой игры из резервной копии hakuX или ZIP с сохранениями Xbox</string>
+  <string name="game_data_stop_game">Для переноса сохранений завершите запущенную игру.</string>
+  <string name="game_data_exported">Экспортировано файлов: %1$d.</string>
+  <string name="game_data_imported">Импортировано файлов: %1$d.</string>
+  <string name="game_data_no_match">В архиве нет данных для игры с ID %1$s.</string>
+  <string name="game_data_too_large">Архив превышает ограничение 2 ГБ для игровых данных.</string>
+  <string name="game_data_confirm">Игра: %1$s\nID игры: %2$s\nФайлов: %3$d. Существующих папок сохранений для замены: %4$d.\nОдноимённые файлы в UDATA и TDATA будут заменены. Данные других игр пропускаются, сохранения вне архива остаются.</string>
+  <string name="game_data_working">Перенос игровых данных…</string>
+  <string name="game_operation_failed">Не удалось выполнить операцию: %1$s</string>
+  <string name="game_mods_format">Формат hakuX для Xbox · %1$s. Коды должны соответствовать версии диска. Новый импортированный контент выключен до выбора.</string>
+  <string name="game_mods_import">Импорт пакета модов</string>
+  <string name="game_mods_import_desc">ZIP с папками &lt;мод&gt;/mod.txt, необязательными files/ и cheats.txt</string>
+  <string name="game_cheats_import">Импорт cheats.txt</string>
+  <string name="game_cheats_import_desc">Текст UTF-8 с секциями [Название чита] и командами hakuX</string>
+  <string name="game_mods_confirm">Импортировать для %1$s (%2$s)? Пакеты для другого ID или версии диска отклоняются. Одноимённые пользовательские папки модов или список читов будут заменены. Для применения изменений перезапустите игру.</string>
+  <string name="game_mods_updated">Пользовательский контент обновлён. Выберите нужные моды и читы, затем перезапустите игру.</string>
+  <string name="game_mods_remove">Удалить импортированный контент</string>
+  <string name="game_mods_remove_desc">Удалить все импортированные моды и читы этой игры? Встроенные пакеты и сохранения останутся.</string>
+  <string name="game_mods_stop_game">Перед импортом или удалением модов и читов завершите запущенную игру.</string>
+  <string name="game_mods_working">Обновление модов и читов…</string>
+  <string name="game_data_folder">Папка резервных копий</string>
+  <string name="game_data_folder_desc">Можно указать постоянную папку для резервных копий этой игры</string>
+  <string name="game_data_folder_clear">Выбирать место при каждом экспорте</string>
+  <string name="game_data_folder_unavailable">Нет доступа к папке резервных копий. Выберите папку заново.</string>
+</resources>

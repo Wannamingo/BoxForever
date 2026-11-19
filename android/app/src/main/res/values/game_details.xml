@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="game_details_title">Game details</string>
+  <string name="game_details_unavailable">This game is unavailable. Return to the library and refresh the list.</string>
+  <string name="game_details_play">Play</string>
+  <string name="game_details_settings_desc">Individual graphics, display, controls and Xbox settings</string>
+  <string name="game_details_mods_desc">Built-in and imported hakuX mods and cheats for this disc version</string>
+  <string name="game_details_states_desc">Load an emulator state from an automatic, quick or manual slot</string>
+  <string name="game_details_wait_id">Reading the disc ID is required to manage mods and saved data.</string>
+  <string name="game_details_library">Library</string>
+  <string name="game_data_title">Game data</string>
+  <string name="game_data_desc">In-game saves and title data (UDATA and TDATA). Emulator states are managed separately. Finish the running game before transferring data.</string>
+  <string name="game_data_export">Export game data</string>
+  <string name="game_data_export_desc">Choose where to save a ZIP backup of this game</string>
+  <string name="game_data_import">Import game data</string>
+  <string name="game_data_import_desc">Restore only this title from a hakuX backup or Xbox saves ZIP</string>
+  <string name="game_data_stop_game">Finish the running game before transferring saved data.</string>
+  <string name="game_data_exported">Exported files: %1$d.</string>
+  <string name="game_data_imported">Imported files: %1$d.</string>
+  <string name="game_data_no_match">The archive has no data for title ID %1$s.</string>
+  <string name="game_data_too_large">The archive exceeds the 2 GB limit for game data.</string>
+  <string name="game_data_confirm">Game: %1$s\nTitle ID: %2$s\nFiles: %3$d. Existing save folders to replace: %4$d.\nFiles with matching names will be overwritten in UDATA and TDATA. Other titles are skipped; saves absent from this archive are kept.</string>
+  <string name="game_data_working">Transferring game data…</string>
+  <string name="game_operation_failed">Operation failed: %1$s</string>
+  <string name="game_mods_format">hakuX Xbox format · %1$s. Codes must match this disc version. Imported content is disabled until selected.</string>
+  <string name="game_mods_import">Import mod pack</string>
+  <string name="game_mods_import_desc">ZIP containing &lt;mod&gt;/mod.txt and optional files/ and cheats.txt</string>
+  <string name="game_cheats_import">Import cheats.txt</string>
+  <string name="game_cheats_import_desc">UTF-8 text with [Cheat name] sections and hakuX cheat instructions</string>
+  <string name="game_mods_confirm">Import for %1$s (%2$s)? Packs for a different title ID or disc version are rejected. Matching user mod folders or the user cheat list will be replaced. Restart the game to apply changes.</string>
+  <string name="game_mods_updated">User content updated. Select the mods and cheats to enable, then restart the game.</string>
+  <string name="game_mods_remove">Remove imported content</string>
+  <string name="game_mods_remove_desc">Remove all imported mods and cheats for this game? Built-in packs and saved data are kept.</string>
+  <string name="game_mods_stop_game">Finish the running game before importing or removing mods and cheats.</string>
+  <string name="game_mods_working">Updating mods and cheats…</string>
+  <string name="game_data_folder">Backup folder</string>
+  <string name="game_data_folder_desc">Optional: remember a destination folder for this game</string>
+  <string name="game_data_folder_clear">Choose a file location on every export</string>
+  <string name="game_data_folder_unavailable">Cannot write to the backup folder. Select the folder again.</string>
+</resources>
