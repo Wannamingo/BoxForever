@@ -44,3 +44,6 @@ Source and original archive: https://github.com/Wannamingo/Unified/releases/tag/
 Source revision: 7e90a2459b77b6e6968e28c226e8bb50efc1f126.
 Library SHA-256: e4627c2637e536b04c9614b8f9638fbcec645c383a4c8147593cfa31fc7341be.
 Original notices and license texts are inside the archive.
+
+Unified 0.4.64 AFBC for Android API 31 and later
+Source and releases: https://github.com/Wannamingo/Unified

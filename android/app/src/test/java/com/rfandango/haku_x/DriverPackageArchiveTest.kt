@@ -2,6 +2,7 @@ package com.rfandango.haku_x
 
 import java.io.File
 import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.*
 import org.junit.Rule
@@ -60,8 +61,12 @@ class DriverPackageArchiveTest {
   }
   @Test fun allBundledLibrariesPassArchiveAndArm64Checks() {
     val assets=File("src/main/assets/gpu_drivers").listFiles()!!.filter{it.extension=="zip"}
-    assertEquals(6,assets.size)
-    for (file in assets)
-      assertNull(file.name,check(file,"libvulkan_malisx2.so",0,Int.MAX_VALUE))
+    assertEquals(7,assets.size)
+    for (file in assets) {
+      val library = ZipFile(file).use { archive ->
+        archive.entries().asSequence().single { !it.isDirectory && it.name.endsWith(".so") }.name
+      }
+      assertNull(file.name,check(file,library,0,Int.MAX_VALUE))
+    }
   }
 }

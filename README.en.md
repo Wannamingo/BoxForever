@@ -4,9 +4,15 @@
 
 ![HakuX-Mali](assets/branding/hakux-mali-banner.png)
 
-An Android Mali fork of the Xbox emulator hakuX. **Latest release — HakuX-Mali 1.8 (code40).** Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
+An Android Mali fork of the Xbox emulator hakuX. **Latest release — HakuX-Mali 1.9 (code41).** Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
 
-**[Download APK 1.8](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.8/HakuX-Mali-1.8-release.apk)** · **[Release 1.8 and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.8)** · **[All changes](releases/1.8.en.md)**
+**[Download APK 1.9](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.9/HakuX-Mali-1.9-release.apk)** · **[Release 1.9 and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.9)** · **[All changes](releases/1.9.en.md)**
+
+## New in 1.9
+
+- Long-press a game card or press **Y / Menu** for game details, per-game settings, save slots, cover management, mods and cheats.
+- Import mod ZIPs and cheats.txt files. Export or import Xbox UDATA and TDATA using a chosen folder.
+- **Unified 0.4.64 AFBC** is selectable in GPU driver settings. [Game details guide](docs/GAME_DETAILS.md) · [Other Unified versions](https://github.com/Wannamingo/Unified/releases)
 
 ## New in 1.8
 
