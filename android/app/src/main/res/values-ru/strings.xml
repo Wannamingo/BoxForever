@@ -140,6 +140,8 @@
   <string name="settings_language_desc">Язык текста и озвучки в поддерживающих его играх. Применяется при следующем запуске игры.</string>
   <string name="settings_language_auto">Авто: язык системы (%1$s)</string>
   <string name="settings_section_updates">Обновления</string>
+  <string name="settings_about_title">О BoxForever</string>
+  <string name="settings_about_desc">Ранее HakuX-Mali. Независимый форк rfandango/hakuX для игр первой Xbox.</string>
   <string name="settings_update_check">Проверить обновления</string>
   <string name="settings_update_check_desc">BoxForever %1$s. Проверка новых версий на GitHub также выполняется при запуске приложения.</string>
   <string name="settings_update_preview">Включать предварительные версии</string>

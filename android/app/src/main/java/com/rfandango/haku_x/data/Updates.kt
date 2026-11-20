@@ -105,7 +105,7 @@ object Updates {
         val version = UpdatePolicy.boxForeverReleaseVersion(tag) ?: continue
         val isPreview = json.optBoolean("prerelease") || UpdatePolicy.isPreview(version)
         if (json.optBoolean("draft") || (!preview && isPreview)) continue
-        if (compareVersions(version, installed) <= 0) continue
+        if (!UpdatePolicy.isNewerBoxForever(version, installed, BuildConfig.BOX_FOREVER_BRIDGE)) continue
         val previous = best
         if (previous != null) {
           val order = compareVersions(version, previous.version)

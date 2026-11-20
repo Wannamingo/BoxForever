@@ -4,9 +4,9 @@
 
 ![BoxForever](assets/branding/BoxForever-README-RU.png)
 
-Форк Xbox-эмулятора для Android с Mali на основе hakuX. **Последний релиз — HakuX-Mali 1.9 (code41).** Поддерживаются ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate. [Исходный hakuX](https://github.com/rfandango/hakuX)
+Независимый эмулятор игр для первой Xbox на Android на основе hakuX. Поддерживаются ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate. [Исходный hakuX](https://github.com/rfandango/hakuX)
 
-**[Скачать APK 1.9](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.9/HakuX-Mali-1.9-release.apk)** · **[Релиз 1.9 и контрольные суммы](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.9)** · **[Все изменения](releases/1.9.ru.md)**
+**[Актуальный APK и контрольные суммы](https://github.com/Wannamingo/HakuX-Mali/releases/latest)** · **[История выпусков](https://github.com/Wannamingo/HakuX-Mali/releases)** · **[Изменения HakuX-Mali 1.9](releases/1.9.ru.md)**
 
 ## Новое в 1.9
 
@@ -93,7 +93,7 @@ P77r1 квалифицирован выбранными native/API-тестам�
 
 ## Установка
 
-1. Для перехода с HakuX-Mali 1.9 откройте подписанный APK BoxForever 1.0 вручную и установите его поверх прежней версии. Оставьте прежнее приложение установленным, чтобы Android сохранил его данные.
+1. Из HakuX-Mali 1.9 можно перейти на BoxForever через переходную сборку 1.9.1. Подписанный APK актуального выпуска можно установить и вручную поверх 1.9. Оставьте прежнее приложение установленным, чтобы Android сохранил его данные.
 2. Выберите папку собственных ISO/XISO или игр с `default.xbe`. Архивы исходников релиза предназначены для разработчиков.
 3. Выбор драйвера и импорт ZIP доступны на любых моделях и чипах. Автоопределение служит рекомендацией; прежний выбор при обновлении сохраняется. Для Unified P77r1 требуется Android 12/API31 или новее. [Проверки и ограничения](releases/1.7.ru.md).
 4. Авто по умолчанию выключено. Для подбора выберите стабильную игровую сцену и пункт меню паузы «Подобрать настройки по замерам».

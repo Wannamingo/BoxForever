@@ -492,6 +492,12 @@ fun SettingsScreen(
         )
       }
     }
+    SettingsGroup(category == SettingsCategory.APP) {
+      ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_about_title)) },
+        supportingContent = { Text(stringResource(R.string.settings_about_desc)) },
+      )
+    }
     ExperienceSettingsSection(category)
   }
 

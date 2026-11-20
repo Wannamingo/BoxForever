@@ -16,6 +16,11 @@ object UpdatePolicy {
   fun boxForeverReleaseVersion(tag: String): String? =
     tag.takeIf { it.startsWith("boxforever-v") }?.removePrefix("boxforever-v")?.takeIf(versionPattern::matches)
 
+  // The bridge's legacy version number is outside the BoxForever series.
+  // Its APK still has to pass the strictly increasing Android version-code check.
+  fun isNewerBoxForever(version: String, installed: String, legacyBridge: Boolean): Boolean =
+    legacyBridge || compareVersions(version, installed) > 0
+
   fun isPreview(version: String): Boolean = previewPattern.containsMatchIn(version)
 
   fun assetDigest(value: String): String? =

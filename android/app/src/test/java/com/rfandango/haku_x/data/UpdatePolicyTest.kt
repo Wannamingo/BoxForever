@@ -36,7 +36,15 @@ class UpdatePolicyTest {
     assertNull(UpdatePolicy.boxForeverReleaseVersion("v1.0"))
     assertNull(UpdatePolicy.boxForeverReleaseVersion("boxforever-vlatest"))
     val next = requireNotNull(UpdatePolicy.boxForeverReleaseVersion("boxforever-v1.1"))
-    assertTrue(UpdatePolicy.compareVersions(next, "1.0") > 0)
+    assertTrue(UpdatePolicy.isNewerBoxForever(next, "1.0", legacyBridge = false))
+  }
+
+  @Test fun legacyBridgeCanEnterBoxForeverVersionSeries() {
+    val initial = requireNotNull(UpdatePolicy.boxForeverReleaseVersion("boxforever-v1.0"))
+    assertTrue(UpdatePolicy.compareVersions("1.9.1", "1.9") > 0)
+    assertTrue(UpdatePolicy.isNewerBoxForever(initial, "1.9.1", legacyBridge = true))
+    assertFalse(UpdatePolicy.isNewerBoxForever(initial, "1.9.1", legacyBridge = false))
+    assertFalse(UpdatePolicy.isNewerBoxForever(initial, "1.0", legacyBridge = false))
   }
 
   @Test fun stableAndPreviewOrdering() {

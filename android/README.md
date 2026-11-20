@@ -1,5 +1,10 @@
 # Building hakuX
 
+The BoxForever release uses `-PhakuxApplicationId=com.rfandango.haku_x.debug`
+and the same signing certificate as HakuX-Mali 1.9. This checkout builds
+BoxForever 1.0 (Android version code 43). Add `-PboxForeverBridge=true` to
+build the transition release 1.9.1 (version code 42) for the legacy updater.
+
 The app (this directory) builds no native code itself: it packs the native
 core's libraries from `app/src/main/jniLibs`. Build the core first, copy its
 libraries in, then build the APK.

@@ -20,6 +20,8 @@ val hasReleaseKeystore = hasKeystoreProperties &&
     !keystoreProperties.getProperty(it).isNullOrBlank()
   }
 
+val boxForeverBridge = providers.gradleProperty("boxForeverBridge").orNull == "true"
+
 android {
   namespace = "com.rfandango.haku_x"
   compileSdk = 36
@@ -31,8 +33,9 @@ android {
     minSdk = 28
     targetSdk = 36
 
-    versionCode = 42
-    versionName = "1.0"
+    versionCode = if (boxForeverBridge) 42 else 43
+    versionName = if (boxForeverBridge) "1.9.1" else "1.0"
+    buildConfigField("boolean", "BOX_FOREVER_BRIDGE", boxForeverBridge.toString())
 
     ndk {
       abiFilters += listOf("arm64-v8a")

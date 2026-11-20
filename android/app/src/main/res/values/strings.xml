@@ -151,6 +151,8 @@
   <string name="settings_language_desc">Games show their text and speech in it where they have it; the others keep their own. Takes effect at the next game start.</string>
   <string name="settings_language_auto">Auto: the phone\'s (%1$s)</string>
   <string name="settings_section_updates">Updates</string>
+  <string name="settings_about_title">About BoxForever</string>
+  <string name="settings_about_desc">Formerly HakuX-Mali. An independent fork of rfandango/hakuX for games from the original Xbox.</string>
   <string name="settings_update_check">Check for updates</string>
   <string name="settings_update_check_desc">BoxForever %1$s. Looks for a newer release on GitHub, as the app also does each time it starts.</string>
   <string name="settings_update_preview">Include preview updates</string>

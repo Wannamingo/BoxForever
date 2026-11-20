@@ -4,9 +4,9 @@
 
 ![BoxForever](assets/branding/BoxForever-README-EN.png)
 
-An Android Mali fork of the Xbox emulator hakuX. **Latest release — HakuX-Mali 1.9 (code41).** Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
+An independent Android emulator for original Xbox games based on hakuX. Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
 
-**[Download APK 1.9](https://github.com/Wannamingo/HakuX-Mali/releases/download/v1.9/HakuX-Mali-1.9-release.apk)** · **[Release 1.9 and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.9)** · **[All changes](releases/1.9.en.md)**
+**[Latest APK and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/latest)** · **[Release history](https://github.com/Wannamingo/HakuX-Mali/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
 
 ## New in 1.9
 
@@ -93,7 +93,7 @@ A full 1.4 calibration cycle on RG477M measured about 60 FPS at 1× versus 48 at
 
 ## Installation
 
-1. To upgrade from HakuX-Mali 1.9, open the signed BoxForever 1.0 APK manually and install it over your existing copy. Keep the previous app installed so Android preserves its data.
+1. HakuX-Mali 1.9 can move to BoxForever through the 1.9.1 transition build. You can also install the current signed APK over 1.9 manually. Keep the previous app installed so Android preserves its data.
 2. Select your own ISO/XISO directory or game folders containing `default.xbe`. Release source archives are for developers.
 3. Driver selection and ZIP import are available on every model and SoC. Detection provides recommendations; updates retain your existing selection. Unified P77r1 requires Android 12/API31 or later. [Checks and limits](releases/1.7.en.md).
 4. Auto is off by default. Use a stable gameplay scene and **Calibrate performance** in the pause menu to measure settings.
