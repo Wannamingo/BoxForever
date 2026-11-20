@@ -93,13 +93,13 @@ A full 1.4 calibration cycle on RG477M measured about 60 FPS at 1× versus 48 at
 
 ## Installation
 
-1. Download **HakuX-Mali-1.7-release.apk** from [stable release 1.7](https://github.com/Wannamingo/HakuX-Mali/releases/tag/v1.7) and install over our previous release. Package ID and signing identity are retained; do not uninstall to update.
+1. To upgrade from HakuX-Mali 1.9, open the signed BoxForever 1.0 APK manually and install it over your existing copy. Keep the previous app installed so Android preserves its data.
 2. Select your own ISO/XISO directory or game folders containing `default.xbe`. Release source archives are for developers.
 3. Driver selection and ZIP import are available on every model and SoC. Detection provides recommendations; updates retain your existing selection. Unified P77r1 requires Android 12/API31 or later. [Checks and limits](releases/1.7.en.md).
 4. Auto is off by default. Use a stable gameplay scene and **Calibrate performance** in the pause menu to measure settings.
 5. A new installation defaults to a 120 FPS ceiling; existing manual limits are preserved. Games retain their own lower 30/60 FPS caps.
 
-Built-in updates use **Wannamingo/HakuX-Mali**. ES-DE: Microsoft Xbox → HakuX-Mali (Standalone), [configurations](https://github.com/Wannamingo/es-de-android-custom-systems). First grant the emulator access to the same games directory.
+The BoxForever updater looks for releases tagged `boxforever-v…` at **Wannamingo/HakuX-Mali** and **Wannamingo/BoxForever**. In ES-DE, the existing **HakuX-Mali (Standalone)** entry launches BoxForever. Grant the emulator access to the same games folder. [ES-DE configurations](https://github.com/Wannamingo/es-de-android-custom-systems)
 
 ## Serious Sam and Russian voice audio
 

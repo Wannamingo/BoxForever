@@ -102,7 +102,7 @@ object Updates {
       for (i in 0 until releases.length()) {
         val json = releases.optJSONObject(i) ?: continue
         val tag = json.optString("tag_name")
-        val version = UpdatePolicy.releaseVersion(tag) ?: continue
+        val version = UpdatePolicy.boxForeverReleaseVersion(tag) ?: continue
         val isPreview = json.optBoolean("prerelease") || UpdatePolicy.isPreview(version)
         if (json.optBoolean("draft") || (!preview && isPreview)) continue
         if (compareVersions(version, installed) <= 0) continue
@@ -243,7 +243,7 @@ object Updates {
       connectTimeout = TIMEOUT_MS
       readTimeout = TIMEOUT_MS
       instanceFollowRedirects = true
-      setRequestProperty("User-Agent", "HakuX-Mali/" + BuildConfig.VERSION_NAME + " (Android)")
+      setRequestProperty("User-Agent", "BoxForever/" + BuildConfig.VERSION_NAME + " (Android)")
     }
 }
 

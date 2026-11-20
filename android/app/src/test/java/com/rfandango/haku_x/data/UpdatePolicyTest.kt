@@ -9,25 +9,34 @@ class UpdatePolicyTest {
       "https://api.github.com/repos/Wannamingo/HakuX-Mali/releases?per_page=30",
       "https://api.github.com/repos/Wannamingo/BoxForever/releases?per_page=30",
     ), UpdatePolicy.releasesUrls)
-    val tag = "v1.2.0-rg477m.2"
+    val tag = "boxforever-v1.0"
     val base = "https://github.com/Wannamingo/HakuX-Mali/releases/download"
-    assertTrue(UpdatePolicy.isApkAsset("HakuX-Mali-1.0-release.apk", "$base/$tag/HakuX-Mali-1.0-release.apk", tag))
     assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "https://github.com/rfandango/hakuX/releases/download/$tag/hakuX.apk", tag))
     assertFalse(UpdatePolicy.isApkAsset("source.zip", "$base/$tag/source.zip", tag))
-    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/v1.2/hakuX.apk", tag))
+    assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/boxforever-v1.2/hakuX.apk", tag))
     assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/$tag/other.apk", tag))
   }
 
   @Test fun transitionAcceptsExactAssetUrlsForBothNames() {
-    val name = "BoxForever-1.10-release.apk"
-    val path = "/releases/download/v1.10/$name"
-    assertTrue(UpdatePolicy.isApkAsset(name, "https://github.com/Wannamingo/HakuX-Mali$path", "v1.10"))
+    val tag = "boxforever-v1.0"
+    val name = "BoxForever-1.0-release.apk"
+    val path = "/releases/download/$tag/$name"
+    assertTrue(UpdatePolicy.isApkAsset(name, "https://github.com/Wannamingo/HakuX-Mali$path", tag))
     val renamed = "https://github.com/Wannamingo/BoxForever$path"
-    assertTrue(UpdatePolicy.isApkAsset(name, renamed, "v1.10"))
-    assertFalse(UpdatePolicy.isApkAsset(name, "${renamed}?download=1", "v1.10"))
+    assertTrue(UpdatePolicy.isApkAsset(name, renamed, tag))
+    assertFalse(UpdatePolicy.isApkAsset(name, "${renamed}?download=1", tag))
     assertFalse(UpdatePolicy.isApkAsset(name, renamed, "v1.9"))
-    assertFalse(UpdatePolicy.isApkAsset(name, renamed.replace("Wannamingo", "other"), "v1.10"))
-    assertTrue(UpdatePolicy.compareVersions("1.10", "1.9") > 0)
+    assertFalse(UpdatePolicy.isApkAsset(name, renamed.replace("Wannamingo", "other"), tag))
+  }
+
+  @Test fun boxForeverNumberingIsSeparateFromLegacyReleases() {
+    assertEquals(UpdatePolicy.releaseVersion("1.0"), UpdatePolicy.boxForeverReleaseVersion("boxforever-v1.0"))
+    assertEquals("1.1-rc.2", UpdatePolicy.boxForeverReleaseVersion("boxforever-v1.1-rc.2"))
+    assertNull(UpdatePolicy.boxForeverReleaseVersion("v1.9"))
+    assertNull(UpdatePolicy.boxForeverReleaseVersion("v1.0"))
+    assertNull(UpdatePolicy.boxForeverReleaseVersion("boxforever-vlatest"))
+    val next = requireNotNull(UpdatePolicy.boxForeverReleaseVersion("boxforever-v1.1"))
+    assertTrue(UpdatePolicy.compareVersions(next, "1.0") > 0)
   }
 
   @Test fun stableAndPreviewOrdering() {

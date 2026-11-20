@@ -13,13 +13,16 @@ object UpdatePolicy {
   fun releaseVersion(tag: String): String? =
     tag.removePrefix("v").removePrefix("V").takeIf(versionPattern::matches)
 
+  fun boxForeverReleaseVersion(tag: String): String? =
+    tag.takeIf { it.startsWith("boxforever-v") }?.removePrefix("boxforever-v")?.takeIf(versionPattern::matches)
+
   fun isPreview(version: String): Boolean = previewPattern.containsMatchIn(version)
 
   fun assetDigest(value: String): String? =
     digestPattern.matchEntire(value)?.groupValues?.get(1)?.lowercase()
 
   fun isApkAsset(name: String, url: String, tag: String): Boolean =
-    releaseVersion(tag) != null && apkNamePattern.matches(name) &&
+    boxForeverReleaseVersion(tag) != null && apkNamePattern.matches(name) &&
       repositories.any { url == "https://github.com/$it/releases/download/$tag/$name" }
 
   fun compareVersions(a: String, b: String): Int {

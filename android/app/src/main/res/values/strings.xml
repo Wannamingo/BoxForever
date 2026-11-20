@@ -4,7 +4,7 @@
   <string name="game_prepare_index">Reading game files…</string>
   <string name="game_prepare_choose">Choose a game</string>
   <string name="game_prepare_failed">Could not prepare this game</string>
-  <string name="app_name">BoxForever</string>
+  <string name="app_name" translatable="false">BoxForever</string>
   <string name="setup_title">Welcome to BoxForever</string>
   <string name="setup_subtitle">Point BoxForever at your games. No BIOS or hard disk image needed.</string>
   <string name="setup_not_set">Not set</string>
