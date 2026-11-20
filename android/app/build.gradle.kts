@@ -31,8 +31,8 @@ android {
     minSdk = 28
     targetSdk = 36
 
-    versionCode = 41
-    versionName = "1.9"
+    versionCode = 42
+    versionName = "1.10"
 
     ndk {
       abiFilters += listOf("arm64-v8a")
@@ -57,7 +57,7 @@ android {
   buildTypes {
     debug {
       applicationIdSuffix = ".debug"
-      resValue("string", "app_name", "HakuX-Mali Debug")
+      resValue("string", "app_name", "BoxForever Debug")
       ndk {
         debugSymbolLevel = "NONE"
       }
@@ -74,7 +74,7 @@ android {
       )
     }
     release {
-      resValue("string", "app_name", providers.gradleProperty("hakuxAppName").getOrElse("HakuX-Mali"))
+      resValue("string", "app_name", providers.gradleProperty("hakuxAppName").getOrElse("BoxForever"))
       isDebuggable = false
       isMinifyEnabled = true
       proguardFiles(

@@ -2,8 +2,8 @@ package com.rfandango.haku_x.data
 
 /** This fork's release feed, revision ordering and in-place APK identity. */
 object UpdatePolicy {
-  const val REPO = "Wannamingo/HakuX-Mali"
-  const val RELEASES_URL = "https://api.github.com/repos/$REPO/releases?per_page=30"
+  private val repositories = listOf("Wannamingo/HakuX-Mali", "Wannamingo/BoxForever")
+  val releasesUrls: List<String> = repositories.map { "https://api.github.com/repos/$it/releases?per_page=30" }
   const val MAX_APK_BYTES = 128L * 1024 * 1024
   private val versionPattern = Regex("""\d+(?:\.\d+){1,2}(?:-rg477m\.\d+)?(?:-(?:preview|beta|rc)\.\d+)?""")
   private val previewPattern = Regex("""-(?:preview|beta|rc)\.\d+$""")
@@ -20,7 +20,7 @@ object UpdatePolicy {
 
   fun isApkAsset(name: String, url: String, tag: String): Boolean =
     releaseVersion(tag) != null && apkNamePattern.matches(name) &&
-      url == "https://github.com/$REPO/releases/download/$tag/$name"
+      repositories.any { url == "https://github.com/$it/releases/download/$tag/$name" }
 
   fun compareVersions(a: String, b: String): Int {
     fun parts(v: String) = v.trim().removePrefix("v").removePrefix("V").substringBefore('+')

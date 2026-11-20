@@ -5,7 +5,10 @@ import org.junit.Test
 
 class UpdatePolicyTest {
   @Test fun forkFeedAndAssets() {
-    assertEquals("https://api.github.com/repos/Wannamingo/HakuX-Mali/releases?per_page=30", UpdatePolicy.RELEASES_URL)
+    assertEquals(listOf(
+      "https://api.github.com/repos/Wannamingo/HakuX-Mali/releases?per_page=30",
+      "https://api.github.com/repos/Wannamingo/BoxForever/releases?per_page=30",
+    ), UpdatePolicy.releasesUrls)
     val tag = "v1.2.0-rg477m.2"
     val base = "https://github.com/Wannamingo/HakuX-Mali/releases/download"
     assertTrue(UpdatePolicy.isApkAsset("HakuX-Mali-1.0-release.apk", "$base/$tag/HakuX-Mali-1.0-release.apk", tag))
@@ -13,6 +16,18 @@ class UpdatePolicyTest {
     assertFalse(UpdatePolicy.isApkAsset("source.zip", "$base/$tag/source.zip", tag))
     assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/v1.2/hakuX.apk", tag))
     assertFalse(UpdatePolicy.isApkAsset("hakuX.apk", "$base/$tag/other.apk", tag))
+  }
+
+  @Test fun transitionAcceptsExactAssetUrlsForBothNames() {
+    val name = "BoxForever-1.10-release.apk"
+    val path = "/releases/download/v1.10/$name"
+    assertTrue(UpdatePolicy.isApkAsset(name, "https://github.com/Wannamingo/HakuX-Mali$path", "v1.10"))
+    val renamed = "https://github.com/Wannamingo/BoxForever$path"
+    assertTrue(UpdatePolicy.isApkAsset(name, renamed, "v1.10"))
+    assertFalse(UpdatePolicy.isApkAsset(name, "${renamed}?download=1", "v1.10"))
+    assertFalse(UpdatePolicy.isApkAsset(name, renamed, "v1.9"))
+    assertFalse(UpdatePolicy.isApkAsset(name, renamed.replace("Wannamingo", "other"), "v1.10"))
+    assertTrue(UpdatePolicy.compareVersions("1.10", "1.9") > 0)
   }
 
   @Test fun stableAndPreviewOrdering() {

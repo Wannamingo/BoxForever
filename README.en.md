@@ -1,8 +1,8 @@
-# HakuX-Mali
+# BoxForever — formerly HakuX-Mali
 
 [Русский](README.md) | [English](README.en.md)
 
-![HakuX-Mali](assets/branding/hakux-mali-banner.png)
+![BoxForever](assets/branding/BoxForever-README-EN.png)
 
 An Android Mali fork of the Xbox emulator hakuX. **Latest release — HakuX-Mali 1.9 (code41).** Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
 

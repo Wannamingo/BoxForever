@@ -1,8 +1,8 @@
-# HakuX-Mali
+# BoxForever — ранее HakuX-Mali
 
 [Русский](README.md) | [English](README.en.md)
 
-![HakuX-Mali](assets/branding/hakux-mali-banner.png)
+![BoxForever](assets/branding/BoxForever-README-RU.png)
 
 Форк Xbox-эмулятора для Android с Mali на основе hakuX. **Последний релиз — HakuX-Mali 1.9 (code41).** Поддерживаются ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate. [Исходный hakuX](https://github.com/rfandango/hakuX)
 

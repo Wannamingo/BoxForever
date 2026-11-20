@@ -152,7 +152,7 @@ fun LibraryScreen(
     Column(Modifier.padding(padding).fillMaxSize()) {
       Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         // Compose painterResource accepts bitmap/vector resources, not adaptive launcher XML.
-        Image(painterResource(R.mipmap.ic_launcher_foreground), null, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
+        Image(painterResource(R.drawable.bf_library_icon), null, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
           Text(stringResource(R.string.ui_library_title), style = MaterialTheme.typography.titleLarge)
           Text(pluralStringResource(R.plurals.ui_library_count, state.visibleGames.size, state.visibleGames.size), style = MaterialTheme.typography.bodySmall,

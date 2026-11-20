@@ -77,8 +77,11 @@ object Updates {
     release.takeIf { includePreview(context) == preview }.also { _available.value = it }
   }
 
-  private fun fetch(installed: String, preview: Boolean): Release? {
-    val conn = open(UpdatePolicy.RELEASES_URL)
+  private fun fetch(installed: String, preview: Boolean): Release? =
+    UpdatePolicy.releasesUrls.firstNotNullOfOrNull { fetchFeed(it, installed, preview) }
+
+  private fun fetchFeed(url: String, installed: String, preview: Boolean): Release? {
+    val conn = open(url)
     conn.setRequestProperty("Accept", "application/vnd.github+json")
     try {
       val response = conn.responseCode
@@ -117,7 +120,7 @@ object Updates {
         val digest = UpdatePolicy.assetDigest(apk.optString("digest")) ?: continue
         if (apk.optString("state") != "uploaded" || size !in 1..UpdatePolicy.MAX_APK_BYTES) continue
         best = Release(
-          version, json.optString("name").ifBlank { "HakuX-Mali $version" }, json.optString("body"),
+          version, json.optString("name").ifBlank { "BoxForever $version" }, json.optString("body"),
           apk.getString("browser_download_url"), size, digest, isPreview,
         )
       }
