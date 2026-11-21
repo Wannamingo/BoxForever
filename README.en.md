@@ -6,7 +6,13 @@
 
 An independent Android emulator for original Xbox games based on hakuX. Supports ANBERNIC RG477M, RG476H, RG Vita Pro and RG Rotate. [Upstream hakuX](https://github.com/rfandango/hakuX)
 
-**[Latest APK and checksums](https://github.com/Wannamingo/HakuX-Mali/releases/latest)** · **[Release history](https://github.com/Wannamingo/HakuX-Mali/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
+**[Latest APK and checksums](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[Release history](https://github.com/Wannamingo/BoxForever/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
+
+## What's new in BoxForever 1.0.1
+
+- On-screen **QS** (quick save) and **QL** (quick load) use the current game's quick slot. They are hidden by default. In the pause menu, open **Edit on-screen controls**, tap QS or QL, then choose **Show**. You can move or resize either button and adjust its opacity.
+- Turnip 26.0.0 R8 import and Vulkan loading were tested in Crazy Taxi 3 on the Lenovo Legion TB321FU and Huawei MNA-LX9. Quick-slot saving and loading were tested on Legion with the system Qualcomm driver and Turnip.
+- On RG477M, Syberia was launched from ES-DE using both **BoxForever (Standalone)** and **HakuX-Mali (Standalone)**.
 
 ## New in 1.9
 
@@ -93,13 +99,13 @@ A full 1.4 calibration cycle on RG477M measured about 60 FPS at 1× versus 48 at
 
 ## Installation
 
-1. HakuX-Mali 1.9 can move to BoxForever through the 1.9.1 transition build. You can also install the current signed APK over 1.9 manually. Keep the previous app installed so Android preserves its data.
+1. If you still use HakuX-Mali 1.9, download the current signed APK and install it over 1.9. The built-in updater is available in the 1.9.1 transition build and BoxForever 1.0. Keep the previous app installed so Android preserves its data.
 2. Select your own ISO/XISO directory or game folders containing `default.xbe`. Release source archives are for developers.
 3. Driver selection and ZIP import are available on every model and SoC. Detection provides recommendations; updates retain your existing selection. Unified P77r1 requires Android 12/API31 or later. [Checks and limits](releases/1.7.en.md).
 4. Auto is off by default. Use a stable gameplay scene and **Calibrate performance** in the pause menu to measure settings.
 5. A new installation defaults to a 120 FPS ceiling; existing manual limits are preserved. Games retain their own lower 30/60 FPS caps.
 
-The BoxForever updater looks for releases tagged `boxforever-v…` at **Wannamingo/HakuX-Mali** and **Wannamingo/BoxForever**. In ES-DE, the existing **HakuX-Mali (Standalone)** entry launches BoxForever. Grant the emulator access to the same games folder. [ES-DE configurations](https://github.com/Wannamingo/es-de-android-custom-systems)
+The BoxForever updater looks for releases tagged `boxforever-v…` at **Wannamingo/HakuX-Mali** and **Wannamingo/BoxForever**. In ES-DE, **BoxForever (Standalone)** and existing **HakuX-Mali (Standalone)** assignments both launch BoxForever. Grant the emulator access to the same games folder. [ES-DE configurations](https://github.com/Wannamingo/es-de-android-custom-systems)
 
 ## Serious Sam and Russian voice audio
 

@@ -65,6 +65,7 @@ class OnScreenController @JvmOverloads constructor(
 
   /** The jewel was tapped, or the swipe up from the lower screen. */
   var onMenuButtonTapped: (() -> Unit)? = null
+  var onQuickStateTapped: ((ControlId) -> Unit)? = null
   /** Editing: the selected control changed (null: none). */
   var onSelectionChanged: ((ControlId?) -> Unit)? = null
   /** Editing: a size, visibility or the opacity changed. */
@@ -409,9 +410,9 @@ class OnScreenController @JvmOverloads constructor(
       MotionEvent.ACTION_MOVE -> for (i in 0 until event.pointerCount) {
         move(event.getX(i), event.getY(i), event.getPointerId(i))
       }
-      MotionEvent.ACTION_POINTER_UP -> up(pointer)
+      MotionEvent.ACTION_POINTER_UP -> up(pointer, event.getX(index), event.getY(index))
       MotionEvent.ACTION_UP -> {
-        up(pointer)
+        up(pointer, event.getX(index), event.getY(index))
         releaseAll() // the last finger: nothing can still be held
       }
       MotionEvent.ACTION_CANCEL -> releaseAll()
@@ -481,15 +482,16 @@ class OnScreenController @JvmOverloads constructor(
     }
     // Sliding off a button releases it; onto another free one presses that (A to B and so on).
     release(id)
+    if (id.kind == ControlKind.QUICK_STATE) return
     val next = hit(x, y) ?: return
     if (next.kind != ControlKind.STICK && next.kind != ControlKind.DPAD && next.kind != ControlKind.MENU &&
-      next !in held
+      next.kind != ControlKind.QUICK_STATE && next !in held
     ) {
       press(next, pointer)
     }
   }
 
-  private fun up(pointer: Int) {
+  private fun up(pointer: Int, x: Float, y: Float) {
     if (pointer == menuPointer) {
       if (menuPressed) {
         onMenuButtonTapped?.invoke()
@@ -506,7 +508,11 @@ class OnScreenController @JvmOverloads constructor(
       dpadPointer = -1
       setDpad(0)
     }
-    held.entries.filter { it.value == pointer }.map { it.key }.forEach(::release)
+    val control = held.entries.firstOrNull { it.value == pointer }?.key ?: return
+    release(control)
+    if (control.kind == ControlKind.QUICK_STATE && hit(x, y) == control) {
+      onQuickStateTapped?.invoke(control)
+    }
   }
 
   private fun releaseAll() {

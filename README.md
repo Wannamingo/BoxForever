@@ -6,7 +6,13 @@
 
 Независимый эмулятор игр для первой Xbox на Android на основе hakuX. Поддерживаются ANBERNIC RG477M, RG476H, RG Vita Pro и RG Rotate. [Исходный hakuX](https://github.com/rfandango/hakuX)
 
-**[Актуальный APK и контрольные суммы](https://github.com/Wannamingo/HakuX-Mali/releases/latest)** · **[История выпусков](https://github.com/Wannamingo/HakuX-Mali/releases)** · **[Изменения HakuX-Mali 1.9](releases/1.9.ru.md)**
+**[Актуальный APK и контрольные суммы](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[История выпусков](https://github.com/Wannamingo/BoxForever/releases)** · **[Изменения HakuX-Mali 1.9](releases/1.9.ru.md)**
+
+## Новое в BoxForever 1.0.1
+
+- Экранные кнопки **QS** (быстрое сохранение) и **QL** (быстрая загрузка) используют быстрый слот текущей игры. По умолчанию они скрыты. В меню паузы выберите **Настроить экранные кнопки**, коснитесь QS или QL и нажмите **Показать**. Там же меняются положение, размер и прозрачность.
+- Импорт и фактическая загрузка Turnip 26.0.0 R8 проверены в Crazy Taxi 3 на Lenovo Legion TB321FU и Huawei MNA-LX9. На Legion проверены запись и восстановление быстрого слота на системном драйвере Qualcomm и Turnip.
+- В ES-DE на RG477M запуск Syberia проверен с пунктами **BoxForever (Standalone)** и **HakuX-Mali (Standalone)**.
 
 ## Новое в 1.9
 
@@ -93,13 +99,13 @@ P77r1 квалифицирован выбранными native/API-тестам�
 
 ## Установка
 
-1. Из HakuX-Mali 1.9 можно перейти на BoxForever через переходную сборку 1.9.1. Подписанный APK актуального выпуска можно установить и вручную поверх 1.9. Оставьте прежнее приложение установленным, чтобы Android сохранил его данные.
+1. Если у вас HakuX-Mali 1.9, скачайте подписанный APK актуального выпуска и установите его поверх 1.9. Для переходной 1.9.1 и BoxForever 1.0 доступен встроенный обновлятор. Оставьте прежнее приложение установленным, чтобы Android сохранил его данные.
 2. Выберите папку собственных ISO/XISO или игр с `default.xbe`. Архивы исходников релиза предназначены для разработчиков.
 3. Выбор драйвера и импорт ZIP доступны на любых моделях и чипах. Автоопределение служит рекомендацией; прежний выбор при обновлении сохраняется. Для Unified P77r1 требуется Android 12/API31 или новее. [Проверки и ограничения](releases/1.7.ru.md).
 4. Авто по умолчанию выключено. Для подбора выберите стабильную игровую сцену и пункт меню паузы «Подобрать настройки по замерам».
 5. Потолок новой установки — 120 FPS; прежнее ручное значение сохраняется. Собственные ограничения игр 30/60 FPS остаются.
 
-Встроенный обновлятор BoxForever ищет релизы с тегами `boxforever-v…` по обоим адресам, **Wannamingo/HakuX-Mali** и **Wannamingo/BoxForever**. В ES-DE прежний пункт **HakuX-Mali (Standalone)** запускает BoxForever. Выдайте эмулятору доступ к той же папке игр. [Конфигурации ES-DE](https://github.com/Wannamingo/es-de-android-custom-systems)
+Встроенный обновлятор BoxForever ищет релизы с тегами `boxforever-v…` по обоим адресам, **Wannamingo/HakuX-Mali** и **Wannamingo/BoxForever**. В ES-DE BoxForever запускается через **BoxForever (Standalone)** и через сохранённые назначения **HakuX-Mali (Standalone)**. Выдайте эмулятору доступ к той же папке игр. [Конфигурации ES-DE](https://github.com/Wannamingo/es-de-android-custom-systems)
 
 ## Serious Sam и русская озвучка
 

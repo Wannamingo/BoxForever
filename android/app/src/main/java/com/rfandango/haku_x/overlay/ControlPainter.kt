@@ -48,7 +48,7 @@ class ControlPainter {
     when (s.id.kind) {
       ControlKind.FACE -> face(c, s, pressed)
       ControlKind.GEM -> gem(c, s, pressed)
-      ControlKind.PILL -> pill(c, s, pressed)
+      ControlKind.PILL, ControlKind.QUICK_STATE -> pill(c, s, pressed)
       ControlKind.STICK -> stick(c, s, kx, ky)
       ControlKind.DPAD -> dpad(c, s, dpad)
       ControlKind.TRIGGER -> trigger(c, s, pressed)
@@ -385,7 +385,7 @@ class ControlPainter {
     fun reach(kind: ControlKind): Float = when (kind) {
       ControlKind.FACE -> 1.15f
       ControlKind.GEM -> 1.25f
-      ControlKind.PILL -> 1.6f
+      ControlKind.PILL, ControlKind.QUICK_STATE -> 1.6f
       ControlKind.STICK -> 1.05f
       ControlKind.DPAD -> 1.1f
       ControlKind.TRIGGER -> 1.3f

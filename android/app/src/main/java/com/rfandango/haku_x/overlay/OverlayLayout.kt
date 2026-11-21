@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.io.File
 
 /** How a control is drawn and how it takes touches. */
-enum class ControlKind { FACE, GEM, PILL, STICK, DPAD, TRIGGER, CLICK, MENU }
+enum class ControlKind { FACE, GEM, PILL, STICK, DPAD, TRIGGER, CLICK, MENU, QUICK_STATE }
 
 /** The on-screen controller's controls, laid out like the original Xbox controller (the "Duke"). */
 enum class ControlId(val kind: ControlKind, val label: String, val title: String) {
@@ -26,6 +26,8 @@ enum class ControlId(val kind: ControlKind, val label: String, val title: String
   RIGHT_STICK_CLICK(ControlKind.CLICK, "RS", "Right stick click"),
   DPAD(ControlKind.DPAD, "", "D-pad"),
   MENU(ControlKind.MENU, "", "Menu"),
+  QUICK_SAVE(ControlKind.QUICK_STATE, "QS", "Quick save"),
+  QUICK_LOAD(ControlKind.QUICK_STATE, "QL", "Quick load"),
 }
 
 /**
@@ -75,7 +77,7 @@ object OverlayStore {
         spec.cx = (c.optDouble("x", (spec.cx / w).toDouble()).toFloat() * w).coerceIn(0f, w)
         spec.cy = (c.optDouble("y", (spec.cy / h).toDouble()).toFloat() * h).coerceIn(0f, h)
         spec.radius = (c.optDouble("r", (spec.radius / h).toDouble()).toFloat() * h).coerceIn(minRadius(h), maxRadius(h))
-        spec.visible = id == ControlId.MENU || c.optBoolean("v", true)
+        spec.visible = id == ControlId.MENU || c.optBoolean("v", spec.visible)
         spec.opacity = c.optDouble("o", DEFAULT_OPACITY.toDouble()).toFloat().coerceIn(MIN_OPACITY, 1f)
       }
     } catch (_: Exception) {
@@ -133,8 +135,8 @@ object OverlayStore {
    */
   fun defaults(w: Float, h: Float): OverlayLayout {
     val c = LinkedHashMap<ControlId, ControlSpec>()
-    fun put(id: ControlId, x: Float, y: Float, r: Float) {
-      c[id] = ControlSpec(id, x, y, r)
+    fun put(id: ControlId, x: Float, y: Float, r: Float, visible: Boolean = true) {
+      c[id] = ControlSpec(id, x, y, r, visible)
     }
     val face = h * 0.072f
     val sx = face * 2.15f
@@ -162,6 +164,8 @@ object OverlayStore {
 
     put(ControlId.LEFT_TRIGGER, h * 0.12f, h * 0.12f, h * 0.075f)
     put(ControlId.RIGHT_TRIGGER, w - h * 0.12f, h * 0.12f, h * 0.075f)
+    put(ControlId.QUICK_SAVE, w / 2 - h * 0.105f, h * 0.61f, pill, visible = false)
+    put(ControlId.QUICK_LOAD, w / 2 + h * 0.105f, h * 0.61f, pill, visible = false)
     return OverlayLayout(c)
   }
 }

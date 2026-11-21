@@ -839,6 +839,13 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     overlay.setControllerListener(OverlayBridge())
     overlay.onMenuButtonTapped = { showMenu() }
+    overlay.onQuickStateTapped = { control ->
+      when (control) {
+        com.rfandango.haku_x.overlay.ControlId.QUICK_SAVE -> runHotkey(com.rfandango.haku_x.data.HotkeyAction.QUICK_SAVE)
+        com.rfandango.haku_x.overlay.ControlId.QUICK_LOAD -> runHotkey(com.rfandango.haku_x.data.HotkeyAction.QUICK_LOAD)
+        else -> Unit
+      }
+    }
     overlay.drawGate = overlayPacer::mayDraw
     mLayout?.addView(overlay)
     overlayPacer.attach(overlay)

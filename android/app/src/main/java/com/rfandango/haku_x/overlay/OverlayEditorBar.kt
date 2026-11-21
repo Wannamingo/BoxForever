@@ -131,6 +131,8 @@ class OverlayEditorBar(context: Context, private val controller: OnScreenControl
     ControlId.RIGHT_STICK_CLICK -> "R3"
     ControlId.DPAD -> context.getString(R.string.overlay_control_dpad)
     ControlId.MENU -> context.getString(R.string.overlay_control_menu)
+    ControlId.QUICK_SAVE -> context.getString(R.string.exp_key_save)
+    ControlId.QUICK_LOAD -> context.getString(R.string.exp_key_load)
     ControlId.WHITE -> context.getString(R.string.overlay_control_white)
     ControlId.BLACK -> context.getString(R.string.overlay_control_black)
     else -> id.label
