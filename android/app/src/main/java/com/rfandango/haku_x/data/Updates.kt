@@ -200,9 +200,11 @@ object Updates {
     val info = pm.getPackageArchiveInfo(apk.path, flags) ?: throw IOException("The download isn't an app")
     val installed = pm.getPackageInfo(context.packageName, flags)
     val ours = installed.signingInfo?.apkContentsSigners.orEmpty().map { it.toCharsString() }.toSet()
-    val theirs = info.signingInfo?.apkContentsSigners.orEmpty().map { it.toCharsString() }.toSet()
-    if (!UpdatePolicy.acceptsApk(context.packageName, info.packageName, ours, theirs)) {
-      throw IOException("The download must have this app's package ID and signing certificate")
+    val candidateSigning = info.signingInfo
+    val theirs = candidateSigning?.apkContentsSigners.orEmpty().map { it.toCharsString() }.toSet()
+    val history = candidateSigning?.signingCertificateHistory.orEmpty().map { it.toCharsString() }
+    if (!UpdatePolicy.acceptsApk(context.packageName, info.packageName, ours, theirs, history)) {
+      throw IOException("The download must have this app's package ID and a trusted signing certificate")
     }
     if (PackageInfoCompat.getLongVersionCode(info) <= PackageInfoCompat.getLongVersionCode(installed) ||
       info.versionName?.let(UpdatePolicy::releaseVersion) != release.version) {

@@ -53,6 +53,21 @@ object UpdatePolicy {
       else compareParts(parts(left), parts(right))
   }
 
-  fun acceptsApk(installedPackage: String, candidatePackage: String, ours: Set<String>, theirs: Set<String>): Boolean =
-    installedPackage == candidatePackage && ours.isNotEmpty() && ours == theirs
+  fun acceptsApk(
+    installedPackage: String,
+    candidatePackage: String,
+    installedSigners: Set<String>,
+    candidateSigners: Set<String>,
+    candidateSigningHistory: List<String> = emptyList(),
+  ): Boolean {
+    if (installedPackage != candidatePackage || installedSigners.isEmpty()) return false
+    if (installedSigners == candidateSigners) return true
+
+    // SigningInfo exposes a verified, oldest-to-newest lineage for single-signer APKs.
+    // Start from the current installed signer, so a retired key cannot authorize an update.
+    val installedSigner = installedSigners.singleOrNull() ?: return false
+    val candidateSigner = candidateSigners.singleOrNull() ?: return false
+    return candidateSigningHistory.lastOrNull() == candidateSigner &&
+      installedSigner in candidateSigningHistory.dropLast(1)
+  }
 }

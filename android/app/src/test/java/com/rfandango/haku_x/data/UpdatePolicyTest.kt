@@ -86,4 +86,20 @@ class UpdatePolicyTest {
     assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("our certificate"), setOf("another certificate")))
     assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, emptySet(), emptySet()))
   }
+
+  @Test fun acceptsVerifiedSuccessorOfTheCurrentSigner() {
+    val pkg = "com.rfandango.haku_x.debug"
+    val history = listOf("original", "current", "successor")
+    assertTrue(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current"), setOf("successor"), history))
+    assertFalse(UpdatePolicy.acceptsApk(pkg, "different.package", setOf("current"), setOf("successor"), history))
+    assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current"), setOf("successor"), listOf("original", "successor")))
+    assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current"), setOf("unrelated"), history))
+    assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current", "other"), setOf("successor"), history))
+  }
+
+  @Test fun rejectsAnUpdateSignedWithARetiredKey() {
+    val pkg = "com.rfandango.haku_x.debug"
+    assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current"), setOf("retired"), listOf("retired")))
+    assertFalse(UpdatePolicy.acceptsApk(pkg, pkg, setOf("current"), setOf("other"), listOf("retired", "other")))
+  }
 }

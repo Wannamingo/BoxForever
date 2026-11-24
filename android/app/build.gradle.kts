@@ -33,8 +33,8 @@ android {
     minSdk = 28
     targetSdk = 36
 
-    versionCode = if (boxForeverBridge) 42 else 44
-    versionName = if (boxForeverBridge) "1.9.1" else "1.0.1"
+    versionCode = if (boxForeverBridge) 42 else 45
+    versionName = if (boxForeverBridge) "1.9.1" else "1.0.2"
     buildConfigField("boolean", "BOX_FOREVER_BRIDGE", boxForeverBridge.toString())
 
     ndk {
