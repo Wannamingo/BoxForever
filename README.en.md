@@ -8,6 +8,14 @@ An independent Android emulator for original Xbox games based on hakuX. Supports
 
 **[Latest APK and checksums](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[Release history](https://github.com/Wannamingo/BoxForever/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
 
+## What's new in BoxForever 1.0.4
+
+- Spanish and Brazilian Portuguese are available under **Settings → Application → Interface language**.
+- Improved XISO directory lookup. Added occlusion query resets for Vulkan drivers without host query reset.
+- The emulator applies the selected Xbox AV pack at launch and after loading a save state.
+
+[BoxForever 1.0.4 release notes and validation](releases/1.0.4.en.md).
+
 ## What's new in BoxForever 1.0.3
 
 - The eye button at the top of the game hides and restores the on-screen controls, including **QS** and **QL**.

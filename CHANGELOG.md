@@ -1,5 +1,13 @@
 # Changelog
 
+## BoxForever 1.0.4 — 2026-11-24
+
+- Added Spanish and Brazilian Portuguese interface translations. Select either language under Settings → Application → Interface language.
+- Improved XISO directory traversal so the emulator can find files in deep directory indexes and stop cleanly if an index loops.
+- Added a Vulkan command-buffer reset path for occlusion queries on drivers without host query reset.
+- Synchronized the guest Xbox video pack at game launch and after loading an emulator save state.
+- [Русский](releases/1.0.4.ru.md) · [English](releases/1.0.4.en.md)
+
 ## BoxForever 1.0.3 — 2026-11-24
 
 - Added an in-game button to hide or restore on-screen controls, including quick save and quick load.
