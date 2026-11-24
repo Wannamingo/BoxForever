@@ -64,6 +64,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
   }
   private var discArg = ""
   private var onScreenController: OnScreenController? = null
+  private var controlsVisibilityButton: ControlsVisibilityButton? = null
   private var fpsView: TextView? = null
   private var hitchView: TextView? = null
   /* the settings' overlays, read as the game comes back (onResume) */
@@ -850,21 +851,37 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     mLayout?.addView(overlay)
     overlayPacer.attach(overlay)
     onScreenController = overlay
+    val button = ControlsVisibilityButton(this, ::toggleControls)
+    val density = resources.displayMetrics.density
+    val size = (48 * density).toInt()
+    mLayout?.addView(button, RelativeLayout.LayoutParams(size, size).apply {
+      addRule(RelativeLayout.ALIGN_PARENT_TOP)
+      addRule(RelativeLayout.CENTER_HORIZONTAL)
+      topMargin = (32 * density).toInt() // Below the HUD, away from both trigger buttons.
+    })
+    controlsVisibilityButton = button
     updateControllerVisibility()
   }
 
   /**
-   * All the controls while no physical gamepad is attached; with one, none,
-   * not even the jewel (the swipe up and back open the menu). The menu shows
-   * or hides them whatever is attached, for the rest of the session; hidden
-   * without a gamepad, the jewel stays.
+   * Start with the controls shown when no gamepad is attached. An explicit
+   * choice lasts for the session. The separate visibility button stays
+   * available when every control, including the menu jewel, is hidden.
    */
   private fun updateControllerVisibility() {
     onScreenController?.visibility = if (calibration.trial) View.GONE else View.VISIBLE
-    val hasPad = hasGamepad()
-    val shown = controlsShown ?: !hasPad
+    val shown = controlsShown ?: !hasGamepad()
     onScreenController?.minimal = !shown
-    onScreenController?.jewelHidden = hasPad && !shown
+    onScreenController?.jewelHidden = !shown
+    controlsVisibilityButton?.apply {
+      visibility = if (calibration.trial || editorBar != null) View.GONE else View.VISIBLE
+      setControlsShown(shown)
+    }
+  }
+
+  private fun toggleControls() {
+    controlsShown = !(controlsShown ?: !hasGamepad())
+    updateControllerVisibility()
   }
 
   private fun hasGamepad() = Controllers.connected().isNotEmpty()
@@ -904,10 +921,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
       },
       getString(R.string.game_restart) to ::confirmRestartGame,
       getString(R.string.overlay_menu_edit) to ::editControls,
-      getString(if (shown) R.string.overlay_menu_hide else R.string.overlay_menu_show) to {
-        controlsShown = !shown
-        updateControllerVisibility()
-      },
+      getString(if (shown) R.string.overlay_menu_hide else R.string.overlay_menu_show) to ::toggleControls,
       getString(R.string.overlay_menu_controllers) to ::showPlayers,
     )
     items += getString(R.string.shader_title) to ::showPostShaders
@@ -1048,6 +1062,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     mLayout?.addView(bar, params)
     editorBar = bar
+    controlsVisibilityButton?.visibility = View.GONE
     syncPause()
   }
 
