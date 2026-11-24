@@ -81,27 +81,61 @@ static bool name_eq(const uint8_t *a, size_t alen, const char *b, size_t blen)
     return true;
 }
 
-/* Depth-first over the whole tree: robust against any ordering differences. */
-static bool dir_search(const uint8_t *dir, uint32_t size, uint32_t off, const char *name,
-                       size_t namelen, NcDiscFile *out, unsigned depth)
+/* Repacked tables can be very deep chains. Visit each reachable entry once,
+ * keeping the original left-first order and skipping cycles. Child links
+ * are 16-bit dword offsets, with 0 and 0xFFFF reserved. */
+static bool dir_search(const uint8_t *dir, uint32_t size, const char *name,
+                       size_t namelen, NcDiscFile *out)
 {
-    if (off + 14 > size || depth > 64) {
+    if (size < 14) {
         return false;
     }
-    const uint8_t *e = dir + off;
-    uint16_t left = nc_rd16(e), right = nc_rd16(e + 2);
-    if (left == 0xFFFF && right == 0xFFFF && e[12] == 0xFF) {
-        return false; /* padding */
+    const uint32_t slots = size / 4u < UINT16_MAX ? size / 4u : UINT16_MAX;
+    uint8_t *seen = calloc((slots + 7u) / 8u, 1);
+    uint16_t *stack = malloc((size_t)slots * sizeof(*stack));
+    if (!seen || !stack) {
+        free(seen);
+        free(stack);
+        return false;
     }
-    uint8_t nlen = e[13];
-    if (off + 14 + nlen <= size && name_eq(e + 14, nlen, name, namelen)) {
-        out->sector = nc_rd32(e + 4);
-        out->size = nc_rd32(e + 8);
-        out->attr = e[12];
-        return true;
+
+    bool found = false;
+    size_t sp = 0;
+    stack[sp++] = 0;
+    seen[0] = 1;
+    while (sp) {
+        const uint32_t off = (uint32_t)stack[--sp] * 4u;
+        const uint8_t *e = dir + off;
+        const uint16_t left = nc_rd16(e), right = nc_rd16(e + 2);
+        if (left == UINT16_MAX && right == UINT16_MAX && e[12] == 0xFF) {
+            continue; /* padding */
+        }
+        const uint8_t nlen = e[13];
+        if (off + 14 + nlen <= size && name_eq(e + 14, nlen, name, namelen)) {
+            out->sector = nc_rd32(e + 4);
+            out->size = nc_rd32(e + 8);
+            out->attr = e[12];
+            found = true;
+            break;
+        }
+
+        const uint16_t kids[] = {right, left}; /* LIFO: left is read first */
+        for (unsigned i = 0; i < 2; i++) {
+            const uint16_t child = kids[i];
+            if (!child || child >= slots || (uint32_t)child * 4u + 14 > size) {
+                continue;
+            }
+            const unsigned bit = 1u << (child & 7u);
+            if (!(seen[child >> 3] & bit)) {
+                seen[child >> 3] |= bit;
+                stack[sp++] = child;
+            }
+        }
     }
-    return (left && left != 0xFFFF && dir_search(dir, size, left * 4u, name, namelen, out, depth + 1)) ||
-           (right && right != 0xFFFF && dir_search(dir, size, right * 4u, name, namelen, out, depth + 1));
+
+    free(seen);
+    free(stack);
+    return found;
 }
 
 /* the disc's own files */
@@ -129,7 +163,7 @@ static bool disc_find(const NcDisc *d, const char *path, NcDiscFile *out)
         }
         bool ok = pread_all(d->fd, dir, cur.size,
                             d->part_off + (uint64_t)cur.sector * NC_XDVDFS_SECTOR) &&
-                  dir_search(dir, cur.size, 0, p, (size_t)(end - p), &cur, 0);
+                  dir_search(dir, cur.size, p, (size_t)(end - p), &cur);
         free(dir);
         if (!ok) {
             return false;

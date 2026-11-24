@@ -14,6 +14,10 @@ int main(void)
     assert(hle_vis_result(1024, 16, true) == 64);
     assert(hle_vis_result(37, 0, true) == 37);
     assert(hle_vis_result(UINT64_MAX, 4, true) == UINT32_MAX);
-    puts("Visibility: unavailable/partial results stay visible; valid counts and zero preserved");
+    assert(hle_vis_reset_span(0, 4096, 4096, 256) == 256);
+    assert(hle_vis_reset_span(4080, 45, 4096, 256) == 16);
+    assert(hle_vis_reset_span(0, 45, 4096, 256) == 45);
+    assert(hle_vis_reset_span(45, 45, 4096, 256) == 0);
+    puts("Visibility: fallback, valid counts, wrap and unread-slot protection passed");
     return 0;
 }

@@ -328,6 +328,7 @@ const char *nc_state_load(const char *path)
         hle_host_mem_set_dirty(0, k->vm->ram_size);     /* every page new to the GPU */
         nc_kernel_clock_arm(k);
         nc_kernel_set_hd_key(k);                        /* a state from before it was set */
+        nc_kernel_set_boot_video_mode(k);               /* restored RAM may hold an old AV pack */
         /* The decoder looks at its registers again: what woke it in the run
          * that saved (the flip its stall waited for, a display start) came
          * while it was parked, and nothing may come again (the guest waits

@@ -43,6 +43,14 @@ int main(void)
     aligned[1] = (12u<<16) | (1u<<8) | 0x22;
     assert(hle_vertex_pack_plan(aligned, 1, 22, 0, &p));
     assert(p.mask == 2); /* another binding is not included */
+    /* Fable: 14- and 15-byte streams, and floats beginning at byte 14
+     * in a 66-byte stream. These are repacked without a driver quirk. */
+    uint32_t terrain[16] = {0x12, (4u << 16) | 0x36};
+    assert(hle_vertex_pack_plan(terrain, 0, 14, 0, &p));
+    assert(hle_vertex_pack_plan(terrain, 0, 15, 0, &p));
+    uint32_t mesh[16] = {(14u << 16) | 0x12, (18u << 16) | 0x12,
+                         (34u << 16) | 0x12, (50u << 16) | 0x12};
+    assert(hle_vertex_pack_plan(mesh, 0, 66, 0, &p));
     puts("Vertex repack: 50-byte skinned mesh, exact data preservation, alignment, bounds and constant/other bindings passed");
     return 0;
 }

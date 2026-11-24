@@ -968,6 +968,17 @@ void nc_kernel_title_loaded(NcKernel *k, const NcDisc *disc, const NcDiscFile *x
         nc_vm_wr32(k->vm, s + 4, buf);
     }
     nc_kernel_set_hd_key(k);
+    nc_kernel_set_boot_video_mode(k);
+}
+
+void nc_kernel_set_boot_video_mode(NcKernel *k)
+{
+    /* XAPI reads the boot AV pack from this export. Match the SMC's value
+     * so component output is not mistaken for SCART. */
+    const uint32_t va = data_va(k, "HalBootSMCVideoMode");
+    if (va) {
+        nc_vm_wr32(k->vm, va, av_pack_smc());
+    }
 }
 
 void nc_kernel_set_hd_key(NcKernel *k)

@@ -436,6 +436,7 @@ void nc_kernel_title_loaded(NcKernel *k, const struct NcDisc *disc, const struct
  * saves to it (SaveResigner). Set at each title's start, and after a state
  * load (the state holds its run's kernel memory). */
 void nc_kernel_set_hd_key(NcKernel *k);
+void nc_kernel_set_boot_video_mode(NcKernel *k);
 
 /* XLaunchNewImage: a title quick-reboots (HalReturnToFirmware 2) into another
  * XBE with a launch data page. The page goes to the file at nc_kernel_relaunch_file;

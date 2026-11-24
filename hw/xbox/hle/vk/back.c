@@ -109,10 +109,13 @@ static struct {
 #define VIS_INDICES    HLE_VIS_INDICES
 #define VIS_MAX_PARTS  16
 #define VIS_PENDING    1024
+#define VIS_RESET_BLOCK 256u
+#define VIS_RESET_LOW    64u
 
 static struct {
     VkQueryPool pool;
     uint32_t next;                              /* ring position */
+    uint32_t ready;                             /* end of the command-reset range */
     bool active;                                /* a test is open */
     bool missing;                               /* some draws could not be counted */
     int32_t in_pass;                            /* its query in the open pass, -1 none */
@@ -139,13 +142,6 @@ static bool vis_init(void)
     if (g_vis.pool) {
         return true;
     }
-    if (!g_hvk.caps.host_query_reset) {
-        if (!unavailable_logged) {
-            unavailable_logged = true;
-            hle_log("hakuX-hle-back", "vis: GPU queries unavailable; uncounted tests report visible");
-        }
-        return false;
-    }
     VkQueryPoolCreateInfo qi = { .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
                                  .queryType = VK_QUERY_TYPE_OCCLUSION, .queryCount = VIS_SLOTS };
     if (T.vkCreateQueryPool(g_hvk.dev, &qi, NULL, &g_vis.pool) != VK_SUCCESS) {
@@ -156,8 +152,51 @@ static bool vis_init(void)
         }
         return false;
     }
-    T.vkResetQueryPool(g_hvk.dev, g_vis.pool, 0, VIS_SLOTS);
+    if (g_hvk.caps.host_query_reset) {
+        T.vkResetQueryPool(g_hvk.dev, g_vis.pool, 0, VIS_SLOTS);
+    } else {
+        hle_log("hakuX-hle-back", "vis: resetting occlusion queries in the command buffer");
+    }
     return true;
+}
+
+static uint32_t vis_reset_count(void)
+{
+    const uint32_t first = g_vis.ready % VIS_SLOTS;
+    uint32_t oldest = VIS_SLOTS;
+    for (uint32_t i = 0; i < g_vis.npend; i++) {
+        if (g_vis.pend[i].nparts) {
+            oldest = g_vis.pend[i].parts[0];
+            break;
+        }
+    }
+    if (oldest == VIS_SLOTS && g_vis.nparts) {
+        oldest = g_vis.parts[0];
+    }
+    /* Pending reports are in recording order. Leave the oldest unread
+     * slot, and everything after it, intact when the reset range wraps. */
+    return hle_vis_reset_span(first, oldest, VIS_SLOTS, VIS_RESET_BLOCK);
+}
+
+/* Refill the ready range between passes on drivers without hostQueryReset. */
+static void vis_reset_ahead(VkCommandBuffer cb)
+{
+    if (g_hvk.caps.host_query_reset || !g_vis.active || g_vis_dbg.off ||
+        g_vis.ready - g_vis.next >= VIS_RESET_LOW || !vis_init()) {
+        return;
+    }
+    const uint32_t count = vis_reset_count();
+    if (count) {
+        T.vkCmdResetQueryPool(cb, g_vis.pool, g_vis.ready % VIS_SLOTS, count);
+        g_vis.ready += count;
+    }
+}
+
+static bool vis_need_reset(void)
+{
+    return !g_hvk.caps.host_query_reset && g_vis.active && !g_vis_dbg.off &&
+           g_vis.in_pass < 0 && g_vis.nparts < VIS_MAX_PARTS &&
+           g_vis.ready == g_vis.next && vis_init() && vis_reset_count() != 0;
 }
 
 /* A draw inside the open pass while a test is open: its query starts. */
@@ -166,12 +205,15 @@ static void vis_draw(VkCommandBuffer cb)
     if (!g_vis.active || g_vis.in_pass >= 0) {
         return;
     }
-    if (g_vis.nparts >= VIS_MAX_PARTS || g_vis_dbg.off || !vis_init()) {
+    if (g_vis.nparts >= VIS_MAX_PARTS || g_vis_dbg.off || !vis_init() ||
+        (!g_hvk.caps.host_query_reset && g_vis.ready == g_vis.next)) {
         g_vis.missing = true;
         return;
     }
     uint32_t slot = g_vis.next++ % VIS_SLOTS;
-    T.vkResetQueryPool(g_hvk.dev, g_vis.pool, slot, 1);    /* the ring is far ahead of use */
+    if (g_hvk.caps.host_query_reset) {
+        T.vkResetQueryPool(g_hvk.dev, g_vis.pool, slot, 1);
+    }
     T.vkCmdBeginQuery(cb, g_vis.pool, slot,
                       g_hvk.caps.occl_precise ? VK_QUERY_CONTROL_PRECISE_BIT : 0);
     g_vis.in_pass = (int32_t)slot;
@@ -233,10 +275,10 @@ static void cmd_vis_end(const HleCmdVis *c)
     p->report = c->report;
     p->expect = c->expect;
     p->nparts = g_vis.nparts;
-    /* Without a query backend even a report with no recorded parts is
-     * unknown. Some titles issue reports without a draw between them; a
-     * fabricated zero there still hides geometry (Serious Sam's first room). */
-    p->missing = g_vis.missing || !g_hvk.caps.host_query_reset || !g_vis.pool;
+    /* Preserve the conservative result for empty reports on the no-host
+     * reset path. Some titles issue them without draws (Serious Sam). */
+    p->missing = g_vis.missing || !g_vis.pool ||
+                 (!g_hvk.caps.host_query_reset && !g_vis.nparts);
     memcpy(p->parts, g_vis.parts, sizeof(p->parts));
     /* parked until the next submission, also without an open recording:
      * the front end waits for the value after its last one (and kicks once
@@ -416,9 +458,9 @@ static void gput_end(VkCommandBuffer cb, unsigned slot)
 }
 
 /* Why a pass ended (close_pass_why; the pass profile logs them). */
-enum { PE_OTHER, PE_SUBMIT, PE_SETRT, PE_TEX, PE_PREP, PE_LREAD, PE_SWAP, PE_COPY, PE_N };
+enum { PE_OTHER, PE_SUBMIT, PE_SETRT, PE_TEX, PE_PREP, PE_LREAD, PE_SWAP, PE_COPY, PE_VIS, PE_N };
 static const char *const k_pe_names[PE_N] = { "other", "submit", "target", "upload",
-                                              "sampled target", "local read", "swap", "copy" };
+                                              "sampled target", "local read", "swap", "copy", "query reset" };
 static uint64_t g_pe[PE_N];
 
 /* GPU time per render pass while the profile is on (debug): bottom-of-pipe
@@ -760,6 +802,7 @@ static bool open_pass(bool lrz_off)
         .renderArea = { { 0, 0 }, { w, h } }, .layerCount = 1,
         .colorAttachmentCount = rt ? 1 : 0, .pColorAttachments = rt ? &ca : NULL,
         .pDepthAttachment = ds ? &da : NULL, .pStencilAttachment = stencil ? &sa : NULL };
+    vis_reset_ahead(cb);
     pt_pass_begin(cb, w, h, rt ? (int)rt->fmt : -1, ds != NULL, pf);
     T.vkCmdBeginRendering(cb, &ri);
     if (in_pass_clear) {
@@ -2717,6 +2760,9 @@ static void dispatch(const HleCmdHdr *h)
         if (split_rop) {
             hle_draw_rs_brief(rop);
             if (hle_rop_pass_split(&g_rop_pass, rop[3], rop[7])) close_pass();
+        }
+        if (g_hle_gpucut != 3 && g_back.pass_open && vis_need_reset()) {
+            close_pass_why(PE_VIS);
         }
         if (g_hle_gpucut == 3) {
             if (!g_back.pass_open) {
