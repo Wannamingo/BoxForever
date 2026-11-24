@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="extra_profile">Perfil gráfico</string>
+  <string name="extra_profile_desc">Define resolução, FXAA, upscaling e o limite de FPS para o próximo início de jogo. Outras configurações são mantidas.</string>
+  <string name="extra_profile_performance">Desempenho</string>
+  <string name="extra_profile_balanced">Equilibrado</string>
+  <string name="extra_profile_quality">Qualidade</string>
+  <string name="extra_profile_custom">Personalizado</string>
+  <string name="extra_profile_performance_desc">1× · FXAA desativado · Bilinear · Limite de 60 FPS</string>
+  <string name="extra_profile_balanced_desc">1× · FXAA desativado · SGSR · Limite de 120 FPS</string>
+  <string name="extra_profile_quality_desc">2× · FXAA ativado · SGSR · Limite de 120 FPS</string>
+  <string name="extra_hud">Aparência e sensores HUD</string>
+  <string name="extra_hud_desc">Uma linha de FPS, leituras de velocidade, tempos de quadros e temperaturas selecionadas. As alterações se aplicam quando você retornar ao jogo.</string>
+  <string name="extra_save_failed">Não foi possível salvar essas configurações. Verifique o armazenamento disponível.</string>
+  <string name="extra_hud_appearance">Aparência</string>
+  <string name="extra_hud_size">Tamanho do texto</string>
+  <string name="extra_hud_position">Posição</string>
+  <string name="extra_hud_background">Opacidade de fundo</string>
+  <string name="extra_hud_temperatures">Sensores de temperatura</string>
+  <string name="extra_hud_cpu">CPU / SoC</string>
+  <string name="extra_hud_gpu">GPU</string>
+  <string name="extra_hud_battery">Bateria</string>
+  <string name="extra_hud_top_left">Superior esquerdo</string>
+  <string name="extra_hud_top_right">Superior direito</string>
+  <string name="extra_hud_bottom_left">Inferior esquerdo</string>
+  <string name="extra_hud_bottom_right">Inferior direito</string>
+  <string name="extra_percent">%1$d%%</string>
+  <string name="extra_picture">Ajuste de imagem</string>
+  <string name="extra_picture_desc" formatted="false">100% preserva a imagem original. As mudanças se aplicam no próximo começo do jogo.</string>
+  <string name="extra_picture_reset">Restaurar a imagem original</string>
+  <string name="extra_picture_global">Usar configurações de imagem globais</string>
+  <string name="extra_picture_use_global_value">Use o valor global</string>
+  <string name="extra_picture_inherited">Usando o valor global</string>
+  <string name="extra_picture_override">Personalizado para este jogo</string>
+  <string name="extra_brightness">Brilho</string>
+  <string name="extra_contrast">Contraste</string>
+  <string name="extra_saturation">Saturação</string>
+  <string name="extra_gamma">Gamma</string>
+  <string name="extra_sharpness">Nitidez do SGSR</string>
+  <string name="extra_sharpness_desc" formatted="false">0% é suave, 100% é a força original SGSR. Aplica-se apenas quando SGSR amplia a imagem.</string>
+</resources>

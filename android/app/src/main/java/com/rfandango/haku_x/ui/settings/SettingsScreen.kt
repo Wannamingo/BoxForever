@@ -157,6 +157,8 @@ fun SettingsScreen(
           supportingContent = { Text(stringResource(when (uiLanguage) {
             "ru" -> R.string.ui_language_ru
             "en" -> R.string.ui_language_en
+            "es" -> R.string.ui_language_es
+            "pt-BR" -> R.string.ui_language_pt_br
             else -> R.string.ui_language_system
           }) + ". " + stringResource(R.string.ui_app_language_desc)) },
           modifier = Modifier.clickable { uiLanguageDialog = true },
@@ -505,7 +507,10 @@ fun SettingsScreen(
     ChoiceDialog(
       title = stringResource(R.string.ui_app_language),
       options = listOf("system" to stringResource(R.string.ui_language_system),
-        "en" to "English", "ru" to "Русский"),
+        "en" to stringResource(R.string.ui_language_en),
+        "ru" to stringResource(R.string.ui_language_ru),
+        "es" to stringResource(R.string.ui_language_es),
+        "pt-BR" to stringResource(R.string.ui_language_pt_br)),
       current = uiLanguage,
       onPick = { uiLanguageDialog = false; uiLanguage = it; com.rfandango.haku_x.data.UiLanguage.set(context, it) },
       onDismiss = { uiLanguageDialog = false },

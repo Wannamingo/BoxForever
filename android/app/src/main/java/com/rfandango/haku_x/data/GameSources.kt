@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
+import com.rfandango.haku_x.R
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
@@ -38,14 +39,14 @@ object GameSources {
         val id = DocumentsContract.getDocumentId(original)
         val parentId = id.substringBeforeLast('/', id.substringBefore(':') + ":")
         runCatching { DocumentsContract.buildDocumentUriUsingTree(original, parentId) }.getOrElse {
-          throw IOException("Select the folder containing default.xbe, so the game's other files can be read")
+          throw IOException(context.getString(R.string.game_source_pick_folder))
         }
       }
       doc = GameDocuments.stat(context, parent)
     }
     if (!doc.directory) {
       val ext = doc.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
-      if (ext !in imageExtensions) throw IOException("Select an Xbox image or a folder containing default.xbe")
+      if (ext !in imageExtensions) throw IOException(context.getString(R.string.game_source_pick_image))
       return Result.Ready(original)
     }
     progress(Progress())
@@ -55,7 +56,9 @@ object GameSources {
     val seen = HashSet<String>()
     fun find(dir: GameDocuments.Doc, path: String, depth: Int) {
       check()
-      require(depth <= 64 && visited++ < 100_000 && seen.add(dir.uri.toString())) { "Game folder tree is too large or cyclic" }
+      require(depth <= 64 && visited++ < 100_000 && seen.add(dir.uri.toString())) {
+        context.getString(R.string.game_source_invalid_tree)
+      }
       val children = GameDocuments.children(context, dir.uri)
       if (children.any { !it.directory && it.name.equals("default.xbe", true) }) {
         candidates += dir; labels[dir.uri.toString()] = path.ifEmpty { dir.name }; return
@@ -69,7 +72,7 @@ object GameSources {
       }
     }
     find(doc, "", 0)
-    if (candidates.isEmpty()) throw IOException("No Xbox image or folder with default.xbe was found")
+    if (candidates.isEmpty()) throw IOException(context.getString(R.string.game_source_not_found))
     val chosen = candidates.firstOrNull { it.uri.toString() == selection } ?: candidates.singleOrNull()
     if (chosen == null) return Result.Choose(candidates.map { Choice(labels.getValue(it.uri.toString()), it.uri.toString()) }.sortedBy { it.label })
     if (chosen.directory) FolderDisc.prepare(context, chosen.uri, cancelled) { progress(Progress(it.toLong())) }
@@ -92,6 +95,7 @@ object GameSources {
     val target = resolve(context, uri)
     val doc = GameDocuments.stat(context, target)
     return if (doc.directory) FolderDisc.open(context, target) else
-      context.contentResolver.openFileDescriptor(target, "r") ?: throw IOException("Can't open the game")
+      context.contentResolver.openFileDescriptor(target, "r")
+        ?: throw IOException(context.getString(R.string.game_source_cannot_open))
   }
 }

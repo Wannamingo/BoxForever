@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="game_restart">Reiniciar</string>
+  <string name="game_restart_title">¿Reiniciar el juego?</string>
+  <string name="game_restart_message">¿Reiniciar el juego actual con los nuevos ajustes? Se perderá el progreso no guardado. Se mantendrán los estados de ahorro y emulador del juego.</string>
+  <string name="game_restart_unavailable">El juego ya está cerrado o la calibración automática está en curso.</string>
+  <string name="game_restart_graphics_hint">Los ajustes gráficos son almacenados por el emulador, por separado de los estados de guardado. Resolución, FXAA, aumento de escala y perfiles se aplican en el siguiente comienzo de juego. Utilice Reinicie para aplicarlos sin regresar a la biblioteca.</string>
+  <string name="game_restart_fps_hint">Un límite por debajo de la velocidad de fotograma normal del juego puede ralentizar la emulación. Para las pruebas a toda velocidad, utilice 120 FPS.</string>
+</resources>

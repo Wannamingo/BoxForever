@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="library_launch_title">Iniciar juego: %1$s</string>
+  <string name="library_launch_message">Iniciar un nuevo juego lo abre sin cargar un estado de emulador. Se mantienen los guardados existentes.</string>
+  <string name="library_launch_new">Iniciar un juego nuevo</string>
+  <string name="library_launch_latest">Cargar el último guardado</string>
+  <string name="library_launch_checking">Buscando estados guardados…</string>
+  <string name="library_launch_no_state">Este juego no tiene ningún estado de emulador guardado todavía.</string>
+  <string name="library_launch_check_failed">No se pudo comprobar los salvas. Todavía puede iniciar un nuevo juego.</string>
+  <string name="library_launch_last_detail">Más reciente: %1$s · %2$s</string>
+</resources>

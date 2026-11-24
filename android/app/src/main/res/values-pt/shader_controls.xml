@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="shader_controls_desc">Os efeitos de exibição. Máscara, linhas de varredura, brilho, desfoque e curvatura aplicam-se às predefinições de CRT. O tamanho da máscara usa pixels de tela e permanece estável ao renderizar as alterações de resolução.</string>
+  <string name="shader_mask_type">Padrão de máscara</string>
+  <string name="shader_mask_size">Tamanho da máscara</string>
+  <string name="shader_mask_strength">Força da máscara</string>
+  <string name="shader_scanline_strength">Intensidade das linhas de varredura</string>
+  <string name="shader_glow">Brilho</string>
+  <string name="shader_blur">Desfoque da imagem</string>
+  <string name="shader_curvature">Curvatura da tela</string>
+  <string name="shader_mask_none">Sem máscara.</string>
+  <string name="shader_mask_stripes">Faixas RGB — estilo LCD</string>
+  <string name="shader_mask_dots">Pontos redondos — monitor CRT</string>
+  <string name="shader_mask_slots">Fendas — TV CRT</string>
+  <string name="shader_mask_diagonal">Diagonal — estilo XO-1</string>
+  <string name="shader_mask_sparse">Padrão esparso — estilo OLED</string>
+  <string name="shader_from_preset">Do predefinido</string>
+  <string name="shader_reset_parameters">Redefinir para os valores predefinidos</string>
+  <string name="shader_use_global">Usar configurações globais do shader</string>
+  <string name="shader_apply">Aplicar</string>
+  <string name="shader_pixels">%1$d px</string>
+  <string name="shader_percent">%1$d%%</string>
+</resources>

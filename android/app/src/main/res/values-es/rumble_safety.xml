@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="controllers_rumble_mode">Vibración del controlador</string>
+  <string name="controllers_rumble_auto">Automático (recomendado)</string>
+  <string name="controllers_rumble_off">Desactivado</string>
+  <string name="controllers_rumble_on">Activar</string>
+  <string name="controllers_rumble_gamma">Esta construcción más antigua de GammaPad puede interrumpir botones sostenidos y se pega cuando recibe vibración. Deshabilita automáticamente la vibración para este controlador. Al anular esta salvaguardia; úselo después de actualizar GammaOS y pruebas. La fuerza 0 también deshabilita la vibración.</string>
+</resources>

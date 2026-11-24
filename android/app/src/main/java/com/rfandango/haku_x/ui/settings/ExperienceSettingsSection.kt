@@ -197,7 +197,7 @@ internal fun ColumnScope.ExperienceSettingsSection(category: SettingsCategory, g
   }
   val result=measured
   Hint(if(result==null) stringResource(R.string.cal_not_measured)
-    else stringResource(R.string.cal_saved,com.rfandango.haku_x.GameCalibration.describe(result.options),result.metrics!!.fps,result.metrics.p95Ms))
+    else stringResource(R.string.cal_saved,com.rfandango.haku_x.GameCalibration.describe(context,result.options),result.metrics!!.fps,result.metrics.p95Ms))
   TextButton(onClick={
     val active=CalibrationStore.activeGame(context)
     if(gameKey!=null && active==gameKey) context.startActivity(android.content.Intent(context,com.rfandango.haku_x.NativeCoreActivity::class.java)

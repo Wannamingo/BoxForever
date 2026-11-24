@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gpu_driver_err_abi">La biblioteca de controladores debe ser una biblioteca compartida de 64 bits ARM (arm64-v8a) ELF para esta aplicación.</string>
+  <string name="gpu_driver_err_unsafe_path">El ZIP contiene una ruta de archivo no segura. El controlador actual se mantuvo. Elija otro paquete.</string>
+  <string name="gpu_driver_runtime_failed">No se pudo iniciar el controlador de GPU seleccionado. Ve a Configuración → Controlador de GPU y elige Sistema u otro paquete. La selección se conserva hasta que la cambies. La compatibilidad depende de la GPU y del firmware.\n\nDetalles: %1$s</string>
+</resources>

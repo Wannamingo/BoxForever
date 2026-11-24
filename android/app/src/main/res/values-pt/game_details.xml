@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="game_details_title">Detalhes do jogo</string>
+  <string name="game_details_unavailable">Este jogo não está disponível. Volte para a biblioteca e atualize a lista.</string>
+  <string name="game_details_play">Jogar</string>
+  <string name="game_details_settings_desc">Configurações de gráficos, tela, controles e Xbox para este jogo</string>
+  <string name="game_details_mods_desc">Mods e trapaças integrados ou importados para esta versão do disco</string>
+  <string name="game_details_states_desc">Carregue um estado do emulador salvo de forma automática, rápida ou manual</string>
+  <string name="game_details_wait_id">É necessário ler o ID do disco para gerenciar mods e dados salvos.</string>
+  <string name="game_details_library">Biblioteca</string>
+  <string name="game_data_title">Dados do jogo</string>
+  <string name="game_data_desc">Salvamentos no jogo e dados de título (UDATA e TDATA). Os estados do emulador são gerenciados separadamente. Termine o jogo em execução antes de transferir dados.</string>
+  <string name="game_data_export">Exportar dados do jogo</string>
+  <string name="game_data_export_desc">Escolha onde salvar um backup ZIP deste jogo</string>
+  <string name="game_data_import">Importar dados do jogo</string>
+  <string name="game_data_import_desc">Restaure apenas este jogo de um backup do hakuX ou de um ZIP de jogos salvos do Xbox</string>
+  <string name="game_data_stop_game">Termine o jogo antes de transferir dados salvos.</string>
+  <string name="game_data_exported">Arquivos exportados: %1$d.</string>
+  <string name="game_data_imported">Arquivos importados: %1$d.</string>
+  <string name="game_data_no_match">O arquivo não tem dados para o título %1$s.</string>
+  <string name="game_data_too_large">O arquivo excede o limite de 2 GB para os dados do jogo.</string>
+  <string name="game_data_confirm">Jogo: %1$s\nID do título: %2$s\nArquivos: %3$d. Pastas de jogos salvos que serão substituídas: %4$d.\nOs arquivos com nomes correspondentes serão substituídos em UDATA e TDATA. Os dados de outros jogos e os jogos salvos que não estiverem neste arquivo serão mantidos.</string>
+  <string name="game_data_working">Transferência de dados do jogo...</string>
+  <string name="game_operation_failed">A operação falhou: %1$s</string>
+  <string name="game_mods_format">Formato do hakuX para Xbox · %1$s. Os códigos devem corresponder a esta versão do disco. O conteúdo importado permanece desativado até você selecioná-lo.</string>
+  <string name="game_mods_import">Importar pacote de mods</string>
+  <string name="game_mods_import_desc">ZIP com &lt;mod&gt;/mod.txt e, opcionalmente, files/ e cheats.txt</string>
+  <string name="game_cheats_import">Importar cheats.txt</string>
+  <string name="game_cheats_import_desc">Texto UTF-8 com seções [Nome da trapaça] e instruções de trapaças do hakuX</string>
+  <string name="game_mods_confirm">Importar para %1$s (%2$s)? Pacotes de outro ID ou versão do disco serão rejeitados. Pastas de mods com o mesmo nome ou a lista de trapaças do usuário serão substituídas. Reinicie o jogo para aplicar as alterações.</string>
+  <string name="game_mods_updated">Conteúdo do usuário atualizado. Selecione os mods e cheats para ativar e reinicie o jogo.</string>
+  <string name="game_mods_remove">Remover conteúdo importado</string>
+  <string name="game_mods_remove_desc">Remover todos os mods e trapaças importados deste jogo? Os pacotes integrados e os jogos salvos serão mantidos.</string>
+  <string name="game_mods_stop_game">Termine o jogo antes de importar ou remover mods e cheats.</string>
+  <string name="game_mods_working">Atualizando mods e cheats...</string>
+  <string name="game_data_folder">Pasta de backups</string>
+  <string name="game_data_folder_desc">Opcional: lembrar uma pasta de destino para este jogo</string>
+  <string name="game_data_folder_clear">Escolha um local de arquivo em cada exportação</string>
+  <string name="game_data_folder_unavailable">Não é possível gravar na pasta de backup. Selecione a pasta novamente.</string>
+</resources>

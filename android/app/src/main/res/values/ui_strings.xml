@@ -15,6 +15,8 @@
   <string name="ui_language_system">System language</string>
   <string name="ui_language_en">English</string>
   <string name="ui_language_ru">Русский</string>
+  <string name="ui_language_es" translatable="false">Español</string>
+  <string name="ui_language_pt_br" translatable="false">Português (Brasil)</string>
   <string name="ui_reset_game_title">Reset this game’s settings?</string>
   <string name="ui_reset_game_desc">This game will use the global settings again. Saves and game files are kept.</string>
   <string name="ui_library_title">Library</string>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="library_launch_title">Iniciar jogo: %1$s</string>
+  <string name="library_launch_message">Iniciar um novo jogo abre sem carregar um estado de emulador. Salvamentos existentes são mantidos.</string>
+  <string name="library_launch_new">Iniciar um novo jogo</string>
+  <string name="library_launch_latest">Carregar o estado mais recente</string>
+  <string name="library_launch_checking">Procurando estados salvos…</string>
+  <string name="library_launch_no_state">Este jogo ainda não tem estados de emulador salvos.</string>
+  <string name="library_launch_check_failed">Você ainda pode começar um novo jogo.</string>
+  <string name="library_launch_last_detail">Mais recente: %1$s · %2$s</string>
+</resources>

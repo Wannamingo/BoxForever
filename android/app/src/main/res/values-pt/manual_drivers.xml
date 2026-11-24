@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gpu_driver_err_abi">A biblioteca de drivers deve ser uma biblioteca compartilhada ARM (arm64-v8a) ELF de 64 bits para este aplicativo.</string>
+  <string name="gpu_driver_err_unsafe_path">O ZIP contém um caminho de arquivo inseguro. O driver atual foi mantido. Escolha outro pacote.</string>
+  <string name="gpu_driver_runtime_failed">Não foi possível iniciar o driver de GPU selecionado. Acesse Configurações → Driver de GPU e selecione Sistema ou outro pacote. A seleção é mantida até você alterá-la. A compatibilidade depende da GPU e do firmware.\n\nDetalhes: %1$s</string>
+</resources>

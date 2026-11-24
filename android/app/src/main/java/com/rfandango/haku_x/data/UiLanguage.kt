@@ -14,13 +14,16 @@ import android.util.AtomicFile
 /** The app's language is independent from the emulated Xbox language. */
 object UiLanguage {
   const val SYSTEM = "system"
-  val choices = listOf(SYSTEM, "en", "ru")
+  val choices = listOf(SYSTEM, "en", "ru", "es", "pt-BR")
   private fun file(context: Context) = File(context.filesDir, "ui-language")
 
   fun current(context: Context): String {
     if (Build.VERSION.SDK_INT >= 33) {
       val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
-      return if (locales.isEmpty) SYSTEM else locales[0].language.takeIf { it in choices } ?: SYSTEM
+      val locale = locales[0] ?: return SYSTEM
+      return choices.firstOrNull { it == locale.toLanguageTag() }
+        ?: choices.firstOrNull { it.substringBefore('-') == locale.language }
+        ?: SYSTEM
     }
     // Read fresh: the library and the running core live in separate processes.
     return runCatching { file(context).readText().trim().takeIf { it in choices } }.getOrNull() ?: SYSTEM

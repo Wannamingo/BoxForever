@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="ui_category_graphics">Gráficos</string>
+  <string name="ui_category_display">Exibição e HUD</string>
+  <string name="ui_category_controls">Controles</string>
+  <string name="ui_category_games">Jogos e dados</string>
+  <string name="ui_category_system">Sistema Xbox</string>
+  <string name="ui_category_app">aplicativo</string>
+  <string name="ui_scope_global">Configurações globais</string>
+  <string name="ui_scope_game">Este jogo</string>
+  <string name="ui_search_settings">Buscar configurações</string>
+  <string name="ui_search_close">Fechar a pesquisa</string>
+  <string name="ui_search_empty">Nenhuma configuração encontrada</string>
+  <string name="ui_app_language">Idioma da interface</string>
+  <string name="ui_app_language_desc">Altera o idioma dos menus. O idioma dos jogos de Xbox é configurado separadamente.</string>
+  <string name="ui_language_system">Idioma do sistema</string>
+  <string name="ui_language_en">English</string>
+  <string name="ui_language_ru">Русский</string>
+  <string name="ui_reset_game_title">Redefinir as configurações deste jogo?</string>
+  <string name="ui_reset_game_desc">O jogo voltará a usar as configurações globais. Os salvamentos e os arquivos do jogo serão mantidos.</string>
+  <string name="ui_library_title">Biblioteca</string>
+  <plurals name="ui_library_count">
+    <item quantity="one">%1$d jogo</item>
+    <item quantity="other">%1$d jogos</item>
+  </plurals>
+  <string name="ui_library_recent">Jogado recentemente</string>
+  <string name="ui_library_all">Todos os jogos</string>
+  <string name="ui_library_covers">Grade de capas</string>
+  <string name="ui_library_list">Lista compacta</string>
+  <string name="ui_library_cover_size">Tamanho da capa</string>
+  <string name="ui_library_cover_small">Pequeno.</string>
+  <string name="ui_library_cover_medium">Médio.</string>
+  <string name="ui_library_cover_large">Grande</string>
+  <string name="ui_library_set_cover">Escolher capa</string>
+  <string name="ui_library_remove_cover">Remover capa personalizada</string>
+  <string name="ui_library_cover_error">Não foi possível ler esta imagem da capa</string>
+  <string name="ui_pause_title">Jogo pausado</string>
+  <string name="ui_pause_settings">Configurações do jogo</string>
+  <string name="ui_hud_format">FPS: %1$.0f  |  %2$.1f ms média  /  %3$.1f ms último</string>
+</resources>

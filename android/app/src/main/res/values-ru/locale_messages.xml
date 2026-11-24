@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cal_metrics">%1$.1f FPS · P95 %2$.1f мс · CPU %3$.0f%% · ОЗУ %4$.0f МБ\nGPU %5$s · CPU/SoC %6$s · Батарея %7$s</string>
+    <string name="cal_gpu_duration">%1$.2f мс/буфер</string>
+    <string name="cal_fxaa_off">FXAA выкл.</string>
+    <string name="game_source_pick_folder">Выберите папку с default.xbe, чтобы эмулятор мог открыть остальные файлы игры.</string>
+    <string name="game_source_pick_image">Выберите образ Xbox или папку с default.xbe.</string>
+    <string name="game_source_not_found">Не найдено ни одного образа Xbox или папки с default.xbe.</string>
+    <string name="game_source_cannot_open">Не удалось открыть игру.</string>
+    <string name="game_source_invalid_tree">В папке игры слишком много вложенных папок или обнаружена циклическая ссылка.</string>
+    <string name="game_source_path_missing">Не указан путь к игре.</string>
+    <string name="game_source_folder_missing">Не указана папка игры.</string>
+    <string name="game_source_unavailable">Файл или папка игры недоступны.</string>
+    <string name="game_source_metadata_unavailable">Не удалось прочитать сведения о файле игры.</string>
+    <string name="game_source_folder_unreadable">Не удалось прочитать папку игры.</string>
+</resources>

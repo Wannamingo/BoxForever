@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="stick_square">Recorrido cuadrado de los sticks de Xbox</string>
+  <string name="stick_square_desc">Desactivado: rango circular. La prueba muestra la salida enviada al juego; rota cada palo para rastrear su alcance.</string>
+  <string name="stick_range_l">Recorrido del stick izquierdo (50–150%)</string>
+  <string name="stick_range_r">Recorrido del stick derecho (50–150%)</string>
+  <string name="settings_upscale_fsr">AMD FSR 1 (EASU + RCAS)</string>
+</resources>

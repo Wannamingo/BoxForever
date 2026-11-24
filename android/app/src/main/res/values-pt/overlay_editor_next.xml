@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="overlay_editor_all">Todos os controles</string>
+  <string name="overlay_editor_all_short">Todos</string>
+  <string name="overlay_editor_selection">%1$s · Próximo ›</string>
+  <string name="overlay_editor_reset_one">Redefinir controle</string>
+  <string name="overlay_editor_size_value">Tamanho: %1$d%%</string>
+  <string name="overlay_editor_save">Salvar</string>
+  <string name="overlay_editor_save_failed">Não foi possível salvar o layout. Suas alterações continuam abertas no editor.</string>
+  <string name="overlay_editor_workflow">Toque para selecionar · Arraste para mover · Use Próximo para selecionar controles sobrepostos. Cancelar também desfaz as redefinições.</string>
+  <string name="overlay_control_lt">Gatilho esquerdo</string>
+  <string name="overlay_control_rt">Gatilho direito</string>
+  <string name="overlay_control_ls">Analógico esquerdo</string>
+  <string name="overlay_control_rs">Analógico direito</string>
+  <string name="overlay_control_dpad">D-pad</string>
+  <string name="overlay_control_menu">Menu</string>
+  <string name="overlay_control_white">Branco</string>
+  <string name="overlay_control_black">Preto</string>
+</resources>

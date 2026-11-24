@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="ui_category_graphics">Gráficos</string>
+  <string name="ui_category_display">Pantalla y HUD</string>
+  <string name="ui_category_controls">Controles</string>
+  <string name="ui_category_games">Juegos y datos</string>
+  <string name="ui_category_system">Sistema Xbox</string>
+  <string name="ui_category_app">Aplicación</string>
+  <string name="ui_scope_global">Configuración global</string>
+  <string name="ui_scope_game">Este juego</string>
+  <string name="ui_search_settings">Buscar en la configuración</string>
+  <string name="ui_search_close">Cerrar la búsqueda</string>
+  <string name="ui_search_empty">No se encontraron ajustes</string>
+  <string name="ui_app_language">Idioma de la interfaz</string>
+  <string name="ui_app_language_desc">Cambia el idioma de los menús. El idioma de los juegos de Xbox se configura por separado.</string>
+  <string name="ui_language_system">Idioma del sistema</string>
+  <string name="ui_language_en">English</string>
+  <string name="ui_language_ru">Русский</string>
+  <string name="ui_reset_game_title">¿Restablecer la configuración de este juego?</string>
+  <string name="ui_reset_game_desc">El juego volverá a usar la configuración global. Se conservarán las partidas y los archivos del juego.</string>
+  <string name="ui_library_title">Biblioteca</string>
+  <plurals name="ui_library_count">
+    <item quantity="one">%1$d juego</item>
+    <item quantity="other">%1$d juegos</item>
+  </plurals>
+  <string name="ui_library_recent">Jugado recientemente</string>
+  <string name="ui_library_all">Todos los juegos</string>
+  <string name="ui_library_covers">Cuadrícula de carátulas</string>
+  <string name="ui_library_list">Lista compacta</string>
+  <string name="ui_library_cover_size">Tamaño de portada</string>
+  <string name="ui_library_cover_small">Pequeño</string>
+  <string name="ui_library_cover_medium">Medio</string>
+  <string name="ui_library_cover_large">Grande</string>
+  <string name="ui_library_set_cover">Elegir portada</string>
+  <string name="ui_library_remove_cover">Quitar portada personalizada</string>
+  <string name="ui_library_cover_error">No se pudo leer esta imagen de la portada</string>
+  <string name="ui_pause_title">Juego pausado</string>
+  <string name="ui_pause_settings">Configuración del juego</string>
+  <string name="ui_hud_format">FPS: %1$.0f  |  %2$.1f ms media  /  %3$.1f ms último</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="cal_metrics">%1$.1f FPS · P95 %2$.1f ms · CPU %3$.0f%% · RAM %4$.0f MB\nGPU %5$s · CPU/SoC %6$s · Batería %7$s</string>
+  <string name="cal_gpu_duration">%1$.2f ms/búfer</string>
+  <string name="cal_fxaa_off">FXAA desactivado</string>
+  <string name="game_source_pick_folder">Selecciona la carpeta que contiene default.xbe para poder leer los demás archivos del juego.</string>
+  <string name="game_source_pick_image">Selecciona una imagen de Xbox o una carpeta que contenga default.xbe.</string>
+  <string name="game_source_not_found">No se encontró ninguna imagen de Xbox ni una carpeta con default.xbe.</string>
+  <string name="game_source_cannot_open">No se pudo abrir el juego.</string>
+  <string name="game_source_invalid_tree">La estructura de carpetas del juego es demasiado grande o contiene un ciclo.</string>
+  <string name="game_source_path_missing">Falta la ruta del juego.</string>
+  <string name="game_source_folder_missing">Falta la carpeta del juego.</string>
+  <string name="game_source_unavailable">El archivo o la carpeta del juego no está disponible.</string>
+  <string name="game_source_metadata_unavailable">No se pueden leer los metadatos del archivo del juego.</string>
+  <string name="game_source_folder_unreadable">No se puede leer la carpeta del juego.</string>
+</resources>

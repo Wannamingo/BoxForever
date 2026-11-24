@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="overlay_editor_all">Todos los controles</string>
+  <string name="overlay_editor_all_short">Todos</string>
+  <string name="overlay_editor_selection">%1$s · Siguiente ›</string>
+  <string name="overlay_editor_reset_one">Restablecer control</string>
+  <string name="overlay_editor_size_value">Tamaño: %1$d%%</string>
+  <string name="overlay_editor_save">Guardar</string>
+  <string name="overlay_editor_save_failed">No se pudo guardar la disposición. Tus cambios siguen abiertos en el editor.</string>
+  <string name="overlay_editor_workflow">Toca para seleccionar · Arrastra para mover · Usa Siguiente para seleccionar controles cubiertos. Cancelar también deshace los restablecimientos.</string>
+  <string name="overlay_control_lt">Gatillo izquierdo</string>
+  <string name="overlay_control_rt">Gatillo derecho</string>
+  <string name="overlay_control_ls">Stick izquierdo</string>
+  <string name="overlay_control_rs">Stick derecho</string>
+  <string name="overlay_control_dpad">D-pad</string>
+  <string name="overlay_control_menu">Menú</string>
+  <string name="overlay_control_white">Blanco</string>
+  <string name="overlay_control_black">Negro</string>
+</resources>

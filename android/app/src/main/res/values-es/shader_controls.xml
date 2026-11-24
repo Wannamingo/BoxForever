@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="shader_controls_desc">Máscara, líneas de escaneo, brillo, desenfoque y curvatura se aplican a los preajustes CRT. El tamaño de la máscara utiliza píxeles de pantalla y se mantiene estable cuando cambia la resolución de renderización.</string>
+  <string name="shader_mask_type">Patrón de máscara</string>
+  <string name="shader_mask_size">Tamaño de la máscara</string>
+  <string name="shader_mask_strength">Fuerza de la máscara</string>
+  <string name="shader_scanline_strength">Intensidad de las líneas de barrido</string>
+  <string name="shader_glow">Resplandor</string>
+  <string name="shader_blur">Desenfoque de imagen</string>
+  <string name="shader_curvature">Curvatura de pantalla</string>
+  <string name="shader_mask_none">Sin máscara</string>
+  <string name="shader_mask_stripes">Franjas RGB — estilo LCD</string>
+  <string name="shader_mask_dots">Puntos redondos — monitor CRT</string>
+  <string name="shader_mask_slots">Ranuras — televisor CRT</string>
+  <string name="shader_mask_diagonal">Diagonal — estilo XO-1</string>
+  <string name="shader_mask_sparse">Patrón disperso — estilo OLED</string>
+  <string name="shader_from_preset">Del preajuste</string>
+  <string name="shader_reset_parameters">Restablecer valores del preajuste</string>
+  <string name="shader_use_global">Usar la configuración del sombreador global</string>
+  <string name="shader_apply">Aplicar</string>
+  <string name="shader_pixels">%1$d px</string>
+  <string name="shader_percent">%1$d%%</string>
+</resources>

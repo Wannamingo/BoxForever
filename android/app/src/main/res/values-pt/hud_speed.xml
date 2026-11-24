@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="hud_speed_title">Velocidade de emulação</string>
+  <string name="hud_speed_desc" formatted="false">Mostra o progresso do relógio virtual Xbox: 100% significa que seu relógio mantém o ritmo com o tempo real. A taxa de quadros é medida separadamente. Disponível após um segundo de execução.</string>
+  <string name="hud_reference_title">Referência do jogo FPS para estimativa de velocidade</string>
+  <string name="hud_reference_desc">Escolha a taxa de quadros normal do jogo para uma porcentagem de ritmo aproximada adicional. A escolha se aplica a este jogo quando definido nas configurações do jogo. As taxas de quadros de menu e vídeo podem ser diferentes.</string>
+  <string name="hud_reference_none">Não definido</string>
+  <string name="hud_clock_value">VELOCIDADE %1$s</string>
+  <string name="hud_frame_speed_value">RITMO ≈%1$s (%2$d FPS)</string>
+  <string name="hud_speed_paused">PAUSADO</string>
+  <string name="ui_hud_speed_format">FPS: %1$.0f  |  %4$s  |  %2$.1f ms média  /  %3$.1f ms último</string>
+</resources>

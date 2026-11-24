@@ -336,7 +336,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
       com.rfandango.haku_x.data.CalibrationStore(this).measured(gameKey())?.options
         ?: com.rfandango.haku_x.data.AutomaticPerformance.forDevice(this) else null
     args += "fpslimit=${automatic?.fpsLimit ?: settings.frameRateLimit}"
-    if (automatic != null) Log.i(TAG, "automatic performance: ${GameCalibration.describe(automatic)}; manual settings retained")
+    if (automatic != null) Log.i(TAG, "automatic performance: ${GameCalibration.describe(this, automatic)}; manual settings retained")
     args += com.rfandango.haku_x.data.PostShaders.argument(extra)
     args += extra.audioArgument()
     args += extra.framingArgument()

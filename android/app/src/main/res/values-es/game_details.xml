@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="game_details_title">Detalles del juego</string>
+  <string name="game_details_unavailable">Este juego no está disponible. Volver a la biblioteca y actualizar la lista.</string>
+  <string name="game_details_play">Jugar</string>
+  <string name="game_details_settings_desc">Configuración de gráficos, pantalla, controles y Xbox para este juego</string>
+  <string name="game_details_mods_desc">Mods y trucos integrados o importados para esta versión del disco</string>
+  <string name="game_details_states_desc">Cargar un estado del emulador guardado de forma automática, rápida o manual</string>
+  <string name="game_details_wait_id">La lectura del ID de disco es necesaria para gestionar los mods y los datos guardados.</string>
+  <string name="game_details_library">Biblioteca</string>
+  <string name="game_data_title">Datos del juego</string>
+  <string name="game_data_desc">Guarda en el juego y datos de título (UDATA y TDATA). Los estados de emulador se gestionan por separado. Terminar el juego en ejecución antes de transferir datos.</string>
+  <string name="game_data_export">Exportar datos del juego</string>
+  <string name="game_data_export_desc">Elija dónde guardar una copia de seguridad ZIP de este juego</string>
+  <string name="game_data_import">Importar datos del juego</string>
+  <string name="game_data_import_desc">Restaura solo este juego desde una copia de hakuX o un ZIP de partidas de Xbox</string>
+  <string name="game_data_stop_game">Termina el juego en ejecución antes de transferir los datos guardados.</string>
+  <string name="game_data_exported">Archivos exportados: %1$d.</string>
+  <string name="game_data_imported">Archivos importados: %1$d.</string>
+  <string name="game_data_no_match">El archivo no tiene datos para el título ID %1$s.</string>
+  <string name="game_data_too_large">El archivo supera el límite de 2 GB para los datos del juego.</string>
+  <string name="game_data_confirm">Juego: %1$s\nID del título: %2$s\nArchivos: %3$d. Carpetas de partidas que se reemplazarán: %4$d.\nLos archivos con nombres coincidentes se reemplazarán en UDATA y TDATA. Se conservarán los datos de otros juegos y las partidas que no estén en este archivo.</string>
+  <string name="game_data_working">Transferir datos del juego...</string>
+  <string name="game_operation_failed">Operación fallida: %1$s</string>
+  <string name="game_mods_format">Formato de hakuX para Xbox · %1$s. Los códigos deben coincidir con esta versión del disco. Activa el contenido importado después de seleccionarlo.</string>
+  <string name="game_mods_import">Importar paquete de mods</string>
+  <string name="game_mods_import_desc">ZIP con &lt;mod&gt;/mod.txt y, opcionalmente, files/ y cheats.txt</string>
+  <string name="game_cheats_import">Importación cheats.txt</string>
+  <string name="game_cheats_import_desc">Texto UTF-8 con secciones [Nombre del truco] e instrucciones de trucos de hakuX</string>
+  <string name="game_mods_confirm">¿Importar para %1$s (%2$s)? Se rechazarán los paquetes de otro ID o versión del disco. Se reemplazarán las carpetas de mods con el mismo nombre o la lista de trucos del usuario. Reinicia el juego para aplicar los cambios.</string>
+  <string name="game_mods_updated">Contenido del usuario actualizado. Seleccione los mods y trucos para activar, a continuación, reinicie el juego.</string>
+  <string name="game_mods_remove">Eliminar el contenido importado</string>
+  <string name="game_mods_remove_desc">¿Quitar todos los mods y trucos importados de este juego? Se conservarán los paquetes integrados y las partidas guardadas.</string>
+  <string name="game_mods_stop_game">Terminar el juego en ejecución antes de importar o eliminar mods y trucos.</string>
+  <string name="game_mods_working">Actualizando mods y tramposos...</string>
+  <string name="game_data_folder">Carpeta de copias de seguridad</string>
+  <string name="game_data_folder_desc">Opcional: recuerda una carpeta de destino para este juego</string>
+  <string name="game_data_folder_clear">Elija una ubicación de archivo en cada exportación</string>
+  <string name="game_data_folder_unavailable">No se puede escribir en la carpeta de respaldo. Seleccione la carpeta de nuevo.</string>
+</resources>

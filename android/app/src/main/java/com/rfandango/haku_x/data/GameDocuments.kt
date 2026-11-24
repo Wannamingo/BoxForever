@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import com.rfandango.haku_x.R
 import java.io.File
 import java.io.IOException
 
@@ -31,15 +32,15 @@ object GameDocuments {
   }
   fun stat(context: Context, uri: Uri): Doc {
     if (uri.scheme == "file") {
-      val f = File(uri.path ?: throw IOException("Missing game path"))
-      if (!f.exists()) throw IOException("Game file or folder is unavailable")
+      val f = File(uri.path ?: throw IOException(context.getString(R.string.game_source_path_missing)))
+      if (!f.exists()) throw IOException(context.getString(R.string.game_source_unavailable))
       return Doc(uri, f.name, f.isDirectory, if (f.isFile) f.length() else 0, f.lastModified())
     }
     if (!DocumentsContract.isDocumentUri(context, uri) && !DocumentsContract.isTreeUri(uri)) {
       context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
         if (c.moveToFirst()) return Doc(uri, c.getString(0).orEmpty(), false, if (c.isNull(1)) 0 else c.getLong(1), 0)
       }
-      throw IOException("Game file metadata is unavailable")
+      throw IOException(context.getString(R.string.game_source_metadata_unavailable))
     }
     val document = if (DocumentsContract.isDocumentUri(context, uri)) uri else
       DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
@@ -47,12 +48,12 @@ object GameDocuments {
       if (c.moveToFirst()) return Doc(document, c.getString(1).orEmpty(), c.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR,
         if (c.isNull(3)) 0 else c.getLong(3), if (c.isNull(4)) 0 else c.getLong(4))
     }
-    throw IOException("Game file or folder is unavailable")
+    throw IOException(context.getString(R.string.game_source_unavailable))
   }
   fun children(context: Context, uri: Uri): List<Doc> {
     if (uri.scheme == "file") {
-      val dir = File(uri.path ?: throw IOException("Missing game folder"))
-      return (dir.listFiles() ?: throw IOException("Can't read game folder")).map {
+      val dir = File(uri.path ?: throw IOException(context.getString(R.string.game_source_folder_missing)))
+      return (dir.listFiles() ?: throw IOException(context.getString(R.string.game_source_folder_unreadable))).map {
         Doc(Uri.fromFile(it), it.name, it.isDirectory, if (it.isFile) it.length() else 0, it.lastModified())
       }
     }
@@ -67,6 +68,6 @@ object GameDocuments {
       }
       return out
     }
-    throw IOException("Can't read game folder")
+    throw IOException(context.getString(R.string.game_source_folder_unreadable))
   }
 }

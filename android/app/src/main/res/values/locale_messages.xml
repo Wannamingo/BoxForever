@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cal_metrics">%1$.1f FPS · P95 %2$.1f ms · CPU %3$.0f%% · RAM %4$.0f MB\nGPU %5$s · CPU/SoC %6$s · Battery %7$s</string>
+    <string name="cal_gpu_duration">%1$.2f ms/CB</string>
+    <string name="cal_temperature" translatable="false">%1$.1f°C</string>
+    <string name="cal_fxaa_off">FXAA off</string>
+    <string name="game_source_pick_folder">Select the folder containing default.xbe so the other game files can be read.</string>
+    <string name="game_source_pick_image">Select an Xbox image or a folder containing default.xbe.</string>
+    <string name="game_source_not_found">No Xbox image or folder containing default.xbe was found.</string>
+    <string name="game_source_cannot_open">Could not open the game.</string>
+    <string name="game_source_invalid_tree">The game folder tree is too large or contains a loop.</string>
+    <string name="game_source_path_missing">The game path is missing.</string>
+    <string name="game_source_folder_missing">The game folder is missing.</string>
+    <string name="game_source_unavailable">The game file or folder is unavailable.</string>
+    <string name="game_source_metadata_unavailable">The game file metadata is unavailable.</string>
+    <string name="game_source_folder_unreadable">Could not read the game folder.</string>
+</resources>

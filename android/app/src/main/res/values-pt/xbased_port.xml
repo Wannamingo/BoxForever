@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="stick_square">Alcance quadrado dos analógicos do Xbox</string>
+  <string name="stick_square_desc">O teste mostra a saída enviada para o jogo; gire cada vara para rastrear seu alcance.</string>
+  <string name="stick_range_l">Alcance do analógico esquerdo (50–150%)</string>
+  <string name="stick_range_r">Alcance do analógico direito (50–150%)</string>
+  <string name="settings_upscale_fsr">AMD FSR 1 (EASU + RCAS)</string>
+</resources>

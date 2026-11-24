@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="renderer_dynamic">Resolução dinâmica</string>
+  <string name="renderer_dynamic_min">Escala dinâmica mínima</string>
+  <string name="renderer_dynamic_max">Escala dinâmica máxima</string>
+  <string name="renderer_dynamic_target">Alvo de resolução dinâmica</string>
+  <string name="renderer_dynamic_desc">Experimental. Ajusta a escala entre 1× e 2× durante cenas 3D com base nos FPS e em uma estimativa indireta da carga gráfica. Mantém a redução apenas se os FPS melhorarem. Pausa o ajuste em vídeos e cenas 2D reconhecidos. As alterações se aplicam ao voltar ao jogo. Fica desativada durante a calibração. Não garante a meta de FPS.</string>
+  <string name="renderer_heading">Opções de renderização</string>
+  <string name="renderer_anisotropy">Filtragem anisotrópica</string>
+  <string name="renderer_original">Amostragem original</string>
+  <string name="renderer_caps_unknown">Iniciar um jogo para detectar níveis suportados</string>
+  <string name="renderer_movie_aspect">Proporção dos vídeos</string>
+  <string name="renderer_movie_original">Usar o formato do jogo</string>
+  <string name="renderer_movie_43">4:3 em vídeos reconhecidos</string>
+  <string name="renderer_movie_169">16:9 em vídeos reconhecidos</string>
+  <string name="renderer_movie_auto">Automático: detectar a proporção original</string>
+  <string name="renderer_movie_desc">Aplica-se a filmes Bink reconhecidos e sobreposições de vídeo. Cenas desconhecidas mantêm o layout do jogo; use a ação pausar menu ou um atalho para alternar manualmente.</string>
+  <string name="renderer_movie_toggle">Alternar formato de vídeo</string>
+  <string name="renderer_movie_on">Formato de vídeo manual ativado</string>
+  <string name="renderer_movie_off">Formato de vídeo manual desativado</string>
+</resources>

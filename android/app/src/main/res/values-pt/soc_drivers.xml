@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gpu_driver_detected_chip">Chip detectado</string>
+  <string name="gpu_driver_chip_t820">Unisoc T820</string>
+  <string name="gpu_driver_chip_t618">Unisoc T618</string>
+  <string name="gpu_driver_chip_d8300">Dimensity 8300 / 8300 Ultra</string>
+  <string name="gpu_driver_chip_auto_desc">A detecção de chips fornece recomendações e o padrão inicial. O catálogo completo e a importação ZIP estão disponíveis em todos os modelos. A atualização do aplicativo mantém sua escolha atual.</string>
+  <string name="gpu_driver_binary_requires_api">Esta biblioteca de drivers requer API Android %1$d ou mais recente. É visível no catálogo; a seleção requer uma versão compatível do Android.</string>
+  <string name="gpu_driver_malisx2_t820">Unisoc T820: escolha o driver do sistema, MaliSX2 ou Unified P48r1 abaixo. Outros dispositivos e firmware T820 precisam de seus próprios testes de jogo. Comece em 1×  e reinicie totalmente o aplicativo e o jogo depois de trocar os drivers.</string>
+  <string name="gpu_driver_malisx2_d8300">Dimensity 8300 / 8300 Ultra: escolha um driver abaixo. Unified P48r1 usa a mesma biblioteca que o pacote RG477M. Os testes no RG477M não estabelecem compatibilidade com todos os dispositivos ou firmware. Comece em 1×  e reinicie totalmente o aplicativo e o jogo depois de trocar os drivers.</string>
+  <string name="gpu_driver_malisx2_t618">Unisoc T618: O driver do sistema continua a ser o padrão inicial. Todos os pacotes empacotados e a importação ZIP estão disponíveis para testes manuais. A compatibilidade real depende do driver e do firmware. Reiniciar totalmente o aplicativo e o jogo depois de trocar os drivers.</string>
+</resources>

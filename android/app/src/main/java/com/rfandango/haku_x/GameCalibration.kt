@@ -1,5 +1,6 @@
 package com.rfandango.haku_x
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
@@ -94,7 +95,7 @@ class GameCalibration(private val activity: NativeCoreActivity, private val rest
         val target=if(measuring) CalibrationPolicy.measurementMs(s.index) else CalibrationPolicy.WARMUP_MS
         val option=s.candidates[s.index]
         line.text=activity.getString(R.string.cal_progress,s.index+1,s.candidates.size,
-          describe(option),activity.getString(if(measuring) R.string.cal_measuring else if(warmAt!=0L) R.string.cal_warming else R.string.cal_loading),
+          describe(activity,option),activity.getString(if(measuring) R.string.cal_measuring else if(warmAt!=0L) R.string.cal_warming else R.string.cal_loading),
           (elapsed/1000).toInt(),(target/1000).toInt())
         if(measuring && elapsed>=CalibrationPolicy.measurementMs(s.index)) {
           val v=NativeCoreActivity.nativeMeasureEnd();measuring=false
@@ -127,7 +128,11 @@ class GameCalibration(private val activity: NativeCoreActivity, private val rest
     const val EXTRA_RESTORE="calibrationRestore"
     const val EXTRA_REQUEST="calibrationRequest"
     fun isTrial(activity:NativeCoreActivity) = activity.intent.hasExtra(EXTRA_SESSION) && !activity.intent.getBooleanExtra(EXTRA_RESTORE,false)
-    fun describe(o:GraphicsOptions)="${RenderScale.format(o.scale)}× · ${if(o.fxaa) "FXAA" else "FXAA OFF"} · ${if(o.upscale=="sgsr") "GSR" else "Bilinear"} · ${o.fpsLimit} FPS"
+    fun describe(context: Context, o: GraphicsOptions): String {
+      val fxaa = if (o.fxaa) "FXAA" else context.getString(R.string.cal_fxaa_off)
+      val upscale = if (o.upscale == "sgsr") "GSR" else context.getString(R.string.settings_upscale_bilinear)
+      return "${RenderScale.format(o.scale)}× · $fxaa · $upscale · ${o.fpsLimit} FPS"
+    }
     fun options(activity:NativeCoreActivity):GraphicsOptions? {
       val s=activity.intent.getStringExtra(EXTRA_SESSION)?.let { CalibrationStore(activity).read(it) }?:return null
       return if(activity.intent.getBooleanExtra(EXTRA_RESTORE,false)) {

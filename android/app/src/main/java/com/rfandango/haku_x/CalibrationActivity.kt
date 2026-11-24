@@ -14,7 +14,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.rfandango.haku_x.data.*
-import java.util.Locale
 
 /** Main-process coordinator stays below the trial. Returning without a written
  * result means a crashed/interrupted candidate, never a successful measurement. */
@@ -102,16 +101,17 @@ class CalibrationActivity:Activity() {
   private fun showResults(s:CalibrationSession) {
     val winner=if(s.error==null) CalibrationPolicy.winner(s.runs) else null
     showText(getString(R.string.cal_title)+" — "+s.title+"\n\n"+
-      (s.error?:if(winner==null) getString(R.string.cal_inconclusive) else getString(R.string.cal_winner,GameCalibration.describe(winner.options))))
+      (s.error?:if(winner==null) getString(R.string.cal_inconclusive) else getString(R.string.cal_winner,GameCalibration.describe(this,winner.options))))
     for((i,r) in s.runs.withIndex()) {
       val m=r.metrics
-      val result=if(m?.valid==true) String.format(Locale.getDefault(),
-        "%.1f FPS · P95 %.1f ms · CPU %.0f%% · RAM %.0f MB\nGPU %s · CPU/SoC %s · BAT %s",
+      val result=if(m?.valid==true) getString(R.string.cal_metrics,
         m.fps,m.p95Ms,m.cpuMs/(m.seconds*10),m.peakRssMb,
-        if(m.gpuBuffers>0) String.format(Locale.getDefault(),"%.2f ms/CB",m.gpuMs/m.gpuBuffers) else getString(R.string.cal_unavailable),
-        m.temperatureCpu?.let { "%.1f°C".format(it) }?:"—",m.temperatureBattery?.let { "%.1f°C".format(it) }?:"—")
+        if(m.gpuBuffers>0) getString(R.string.cal_gpu_duration,m.gpuMs/m.gpuBuffers) else getString(R.string.cal_unavailable),
+        m.temperatureCpu?.let { getString(R.string.cal_temperature,it) }?:"—",
+        m.temperatureBattery?.let { getString(R.string.cal_temperature,it) }?:"—")
       else r.error?:getString(R.string.cal_invalid)
-      column.addView(TextView(this).apply { text="${i+1}. ${GameCalibration.describe(r.options)}\n$result";textSize=15f;setPadding(0,12,0,12) })
+      val description = GameCalibration.describe(this, r.options)
+      column.addView(TextView(this).apply { text="${i+1}. $description\n$result";textSize=15f;setPadding(0,12,0,12) })
     }
     if(winner!=null) button(R.string.cal_apply) { restore(s,true) }
     button(R.string.cal_return) { restore(s,false) }
