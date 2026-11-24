@@ -1,5 +1,12 @@
 # Changelog
 
+## BoxForever 1.0.3 — 2026-11-24
+
+- Added an in-game button to hide or restore on-screen controls, including quick save and quick load.
+- Fixed the hang after Start in Double S.T.E.A.L.: The Second Clash by implementing Xbox scatter reads.
+- Moved to the BoxForever release signing key and taught the updater to accept a verified signing lineage.
+- Checked an upgrade from 1.0 and quick-save restoration in Crazy Taxi 3 on Lenovo Legion Y700 after the user's manual installation. Play Protect blocked the standard installation on that device.
+
 ## HakuX-Mali 1.8 — 2026-11-14
 
 - Bundled Unified 0.4.53 with Android 12+ support and fixes for non-power-of-two vertex attribute divisors.

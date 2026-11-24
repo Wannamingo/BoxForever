@@ -8,6 +8,15 @@ An independent Android emulator for original Xbox games based on hakuX. Supports
 
 **[Latest APK and checksums](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[Release history](https://github.com/Wannamingo/BoxForever/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
 
+## What's new in BoxForever 1.0.3
+
+- The eye button at the top of the game hides and restores the on-screen controls, including **QS** and **QL**.
+- Fixed a hang after Start in **Double S.T.E.A.L.: The Second Clash** by adding support for Xbox scatter reads.
+- The APK uses the BoxForever release key and carries a signing lineage from the previous certificate. The app ID is preserved, and the updater supports Android-verified signing lineage.
+- After upgrading from 1.0 on the Lenovo Legion Y700 (TB321FU), the existing library was available. **Crazy Taxi 3** restored its previous quick save with the system Adreno driver. The control toggle and pause menu were checked.
+
+Play Protect blocked the APK during standard installation on the tested Y700. Gameplay checks followed the user's manual installation.
+
 ## What's new in BoxForever 1.0.1
 
 - On-screen **QS** (quick save) and **QL** (quick load) use the current game's quick slot. They are hidden by default. In the pause menu, open **Edit on-screen controls**, tap QS or QL, then choose **Show**. You can move or resize either button and adjust its opacity.
