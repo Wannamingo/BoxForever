@@ -65,6 +65,8 @@ bool nc_option(NcOptions *o, const char *arg)
         setenv("NC_PAD_MASK", v, 1);            /* read by the USB at boot (ohci.c) */
     } else if ((v = value(arg, "video="))) {
         o->video = (int64_t)strtoul(v, NULL, 16);
+    } else if ((v = value(arg, "horplus="))) {
+        o->horplus = !strcmp(v, "1");
     } else if ((v = value(arg, "avpack="))) {
         o->av_pack = !strcmp(v, "standard") ? NC_AV_PACK_STANDARD
                      : !strcmp(v, "svideo") ? NC_AV_PACK_SVIDEO
@@ -89,6 +91,10 @@ void nc_options_apply(const NcOptions *o)
     /* The console's video settings: what the title may show (widescreen,
      * 480p/720p/1080i) and the cable it finds (HD modes need component). */
     nc_kernel_set_video(o->video, o->av_pack);
+    nc_hle_set_horplus(o->horplus);
+    if (o->horplus) {
+        nc_log("hakuX-app", "widescreen: experimental Hor+ enabled");
+    }
     if (o->video >= 0) {
         nc_log("hakuX-app", "video flags %08llx, AV pack %d", (unsigned long long)o->video, o->av_pack);
     }

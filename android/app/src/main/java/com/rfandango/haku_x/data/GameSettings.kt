@@ -13,6 +13,7 @@ enum class GameSetting(val key: String) {
   ASYNC_SHADERS("async_shaders"),
   PREBUILD_SHADERS("prebuild_shaders"),
   ASPECT("aspect"),
+  HORPLUS("horplus"),
   FXAA("fxaa"),
   UPSCALE("upscale"),
   BRIGHTNESS("picture_brightness"),
@@ -103,6 +104,8 @@ class RunSettings(private val app: AppPrefs, private val game: GameOverrides?) {
   val asyncShaders get() = bool(GameSetting.ASYNC_SHADERS, app.asyncShaders)
   val prebuildShaders get() = bool(GameSetting.PREBUILD_SHADERS, app.prebuildShaders)
   val aspectRatio get() = text(GameSetting.ASPECT, app.aspectRatio)
+  val horPlus get() = bool(GameSetting.HORPLUS, app.horPlus)
+  val horPlusActive get() = horPlus && screenFormat == AppPrefs.FORMAT_NORMAL
   val fxaa get() = bool(GameSetting.FXAA, app.fxaa)
   val upscaleFilter get() = text(GameSetting.UPSCALE, app.upscaleFilter)
   fun picture(control: PictureControl): Int = control.sanitize(

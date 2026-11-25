@@ -87,6 +87,7 @@ fun SettingsScreen(
   var showHitches by remember { mutableStateOf(prefs.showHitches) }
   var scale by remember { mutableFloatStateOf(prefs.renderScale) }
   var aspect by remember { mutableStateOf(prefs.aspectRatio) }
+  var horPlus by remember { mutableStateOf(prefs.horPlus) }
   var fxaa by remember { mutableStateOf(prefs.fxaa) }
   var upscale by remember { mutableStateOf(prefs.upscaleFilter) }
   var upscaleDialog by remember { mutableStateOf(false) }
@@ -251,6 +252,14 @@ fun SettingsScreen(
             Text(stringResource(aspectLabel(aspect)) + ". " + stringResource(R.string.settings_applies_next_start))
           },
           modifier = Modifier.clickable { aspectDialog = true },
+        )
+      }
+      SettingsTarget(R.string.settings_horplus) {
+        SwitchItem(
+          title = stringResource(R.string.settings_horplus),
+          summary = stringResource(R.string.settings_horplus_desc),
+          checked = horPlus,
+          onChange = { horPlus = it; prefs.horPlus = it },
         )
       }
       SettingsTarget(R.string.settings_show_fps) {

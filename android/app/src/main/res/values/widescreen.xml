@@ -1,0 +1,4 @@
+<resources>
+  <string name="settings_horplus">Widescreen (Hor+, experimental)</string>
+  <string name="settings_horplus_desc">Widens the view in compatible 4:3 games and presents it in 16:9. Menus, HUD and video may have incorrect proportions. For games with built-in widescreen, use Xbox video settings. Restart the game to apply.</string>
+</resources>

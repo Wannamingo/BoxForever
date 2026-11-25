@@ -348,8 +348,11 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     /* The HLE GPU's render scale, 1-4x the title's resolution. */
     args += "scale=${com.rfandango.haku_x.data.RenderScale.format(automatic?.scale ?: settings.renderScale)}"
-    /* The picture's shape: auto (the game's), 4:3, 16:9 or stretch. */
+    // Titles using the console's widescreen or letterbox mode render for that
+    // mode themselves. Hor+ is for a title running with normal Xbox video.
+    val horPlus = settings.horPlusActive && discArg.isNotBlank()
     args += "aspect=${settings.aspectRatio}"
+    if (horPlus) args += "horplus=1"
     /* Anti-aliasing: FXAA over each frame, and how a picture smaller than
      * the screen is scaled up (a larger one is averaged down). */
     args += "fxaa=${if (automatic?.fxaa ?: settings.fxaa) 1 else 0}"

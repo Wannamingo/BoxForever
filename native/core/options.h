@@ -16,6 +16,7 @@
  *   pads=MASK        the players with a controller plugged in (hex, bit n
  *                    player n + 1; default player 1)
  *   video=FLAGS      the console's video settings (XC_VIDEO_FLAGS, hex)
+ *   horplus=0|1      experimental wider field of view for 4:3 titles
  *   avpack=hdtv|standard|svideo|scart|vga   its AV cable
  *   lang=N           its language (XC_LANGUAGE: 1 English ... 9 Portuguese)
  *   clock=MS         its clock's distance from the phone's time
@@ -33,7 +34,7 @@
 #include <stdint.h>
 
 typedef struct NcOptions {
-    bool uncap, async_pipe, prebuild;
+    bool uncap, async_pipe, prebuild, horplus;
     unsigned fps_limit;
     int64_t video;              /* -1: the core's default */
     int av_pack;                /* NC_AV_PACK_* */

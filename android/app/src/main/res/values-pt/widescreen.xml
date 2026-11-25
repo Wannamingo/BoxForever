@@ -1,0 +1,4 @@
+<resources>
+  <string name="settings_horplus">Tela ampla (Hor+, experimental)</string>
+  <string name="settings_horplus_desc">Amplia o campo de visão nos jogos 4:3 compatíveis e exibe a imagem em 16:9. Menus, HUD e vídeos podem ficar com proporções incorretas. Para jogos com suporte nativo, use as configurações de vídeo do Xbox. Reinicie o jogo para aplicar.</string>
+</resources>

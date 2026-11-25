@@ -47,6 +47,7 @@ private val SECTIONS: List<Pair<Int, List<Overridable>>> = listOf(
       { it.frameRateLimit.toString() }, { fpsLimitLabel(it.toInt()) }),
     Overridable(GameSetting.UNCAPPED, R.string.settings_uncap, ON_OFF, { it.uncapped.toString() }, { onOff(it) }),
     Overridable(GameSetting.ASPECT, R.string.settings_aspect, ASPECTS, { it.aspectRatio }, { stringResource(aspectLabel(it)) }),
+    Overridable(GameSetting.HORPLUS, R.string.settings_horplus, ON_OFF, { it.horPlus.toString() }, { onOff(it) }),
   ),
   R.string.settings_section_graphics to listOf(
     Overridable(GameSetting.RENDER_SCALE, R.string.settings_scale, RenderScale.choices.map(RenderScale::format),
@@ -146,6 +147,7 @@ fun GameSettingsScreen(gameKey: String, title: String, onBack: () -> Unit, onOpe
               modifier = Modifier.clickable { editing = item },
             )
           }
+          if (item.setting == GameSetting.HORPLUS) Hint(stringResource(R.string.settings_horplus_desc))
         }
       }
     }

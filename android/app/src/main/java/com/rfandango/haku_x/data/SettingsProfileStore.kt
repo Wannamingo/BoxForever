@@ -17,6 +17,7 @@ class SettingsProfileStore(private val context: Context) {
       GameSetting.ASYNC_SHADERS -> run.asyncShaders.toString()
       GameSetting.PREBUILD_SHADERS -> run.prebuildShaders.toString()
       GameSetting.ASPECT -> run.aspectRatio
+      GameSetting.HORPLUS -> run.horPlus.toString()
       GameSetting.FXAA -> run.fxaa.toString()
       GameSetting.UPSCALE -> run.upscaleFilter
       GameSetting.LANGUAGE -> run.language
@@ -62,6 +63,7 @@ class SettingsProfileStore(private val context: Context) {
       GameSetting.ASYNC_SHADERS -> app.asyncShaders = value.toBoolean()
       GameSetting.PREBUILD_SHADERS -> app.prebuildShaders = value.toBoolean()
       GameSetting.ASPECT -> app.aspectRatio = value
+      GameSetting.HORPLUS -> app.horPlus = value.toBoolean()
       GameSetting.FXAA -> app.fxaa = value.toBoolean()
       GameSetting.UPSCALE -> app.upscaleFilter = value
       GameSetting.LANGUAGE -> app.language = value
@@ -79,7 +81,7 @@ class SettingsProfileStore(private val context: Context) {
 
   internal companion object {
     fun valid(field: GameSetting, value: String): Boolean = when (field) {
-      GameSetting.UNCAPPED, GameSetting.ASYNC_SHADERS, GameSetting.PREBUILD_SHADERS, GameSetting.FXAA,
+      GameSetting.UNCAPPED, GameSetting.ASYNC_SHADERS, GameSetting.PREBUILD_SHADERS, GameSetting.FXAA, GameSetting.HORPLUS,
       GameSetting.VIDEO_480P, GameSetting.VIDEO_720P, GameSetting.VIDEO_1080I, GameSetting.PAL60 -> value in listOf("true", "false")
       GameSetting.FPS_LIMIT -> value.toIntOrNull()?.let { it in 0..240 } == true
       GameSetting.RENDER_SCALE -> RenderScale.parse(value) != null

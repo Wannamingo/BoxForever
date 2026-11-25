@@ -4023,6 +4023,22 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
     /* Target and scaled texture factors in half steps. The shader divides by two. */
     pc.flags |= MIN(rs, 255u) << 16 | MIN(g_hle_rscale, 255u) << 24 |
                 (aax > 1.0f || aay > 1.0f ? HLE_TEXEL_EDGE_FLAG : 0u) | (g_snap_trunc ? HLE_SNAP_TRUNC_FLAG : 0u);
+    /* Leave screen-space draws, depth-only targets and split-screen panes alone.
+     * A programmable draw's shader excludes positions with constant unit W. */
+    if (g_hle_horplus && rt && ds && !rhw && s->rs[RS_ZENABLE] && tw && th &&
+        (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
+        (full || (vpc->x <= 1 && vpc->y <= 1 && vpc->w + 1 >= tw && vpc->h + 1 >= th)) &&
+        (!vpc->clip || (vpc->cx1 <= 1 && vpc->cy1 <= 1 &&
+                        vpc->cx2 >= (int32_t)tw - 1 && vpc->cy2 >= (int32_t)th - 1)) &&
+        (prog || fabsf(pc.mvp[3]) + fabsf(pc.mvp[7]) + fabsf(pc.mvp[11]) >= 1e-6f)) {
+        pc.flags |= HLE_HORPLUS_FLAG;
+        static bool noted_horplus;
+        if (!noted_horplus) {
+            noted_horplus = true;
+            hle_log("hakuX-hle", "widescreen: Hor+ draw flagged on %ux%u (%s)",
+                    tw, th, prog ? "programmable" : "fixed function");
+        }
+    }
     if (!g_hvk.caps.bindless) {
         fixed_bind(cb, &pc);            /* the textures a set of the draw's own */
     }

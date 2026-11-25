@@ -12,6 +12,7 @@
 
 #include "hw/xbox/hle/base.h"
 #include "hw/xbox/hle/hle.h"
+#include "hw/xbox/hle/shader/ff.h"
 #include "hw/xbox/hle/core/probe.h"
 #include "hw/xbox/hle/vk/pipeasync.h"
 #include "hw/xbox/hle/mem/guestmem.h"
@@ -32,6 +33,11 @@ void nc_hle_dirty_init(NcVm *vm);
 static NcCpu *g_cpu;
 static uint32_t g_fs_base;
 static bool g_active;
+
+void nc_hle_set_horplus(bool enabled)
+{
+    g_hle_horplus = enabled;
+}
 
 void nc_hle_set_pipeline_options(bool async, bool prebuild)
 {

@@ -13,7 +13,7 @@ internal object SettingsBackupFormat {
   val files = setOf("overlay_layout.json", "experience-settings.json", "hud-settings.json", "controllers.json", "mod_choices.json")
   val stores = setOf("x1box_prefs", "per_game_settings", "library_ui")
   val profileName = Regex("[0-9a-f]{64}\\.json")
-  private val booleans = setOf("uncap_fps", "async_shaders", "prebuild_shaders", "show_hitches", "show_fps",
+  private val booleans = setOf(GameSetting.HORPLUS.key, "uncap_fps", "async_shaders", "prebuild_shaders", "show_hitches", "show_fps",
     "video_480p", "video_720p", "video_1080i", "video_pal60", "updates_include_preview")
   private val choices = mapOf(
     "app_theme" to setOf("system", "light", "dark"), "aspect_ratio" to setOf("auto", "4:3", "16:9", "stretch"),

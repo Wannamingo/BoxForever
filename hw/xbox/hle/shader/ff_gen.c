@@ -39,6 +39,7 @@ bool g_hle_push_ssbo;                   /* ff.h */
 bool g_hle_glsl_zw;                     /* ff.h */
 bool g_hle_glsl_zclamp;                 /* ff.h */
 bool g_hle_glsl_fixed;                  /* ff.h */
+bool g_hle_horplus;                     /* ff.h */
 
 size_t hle_glsl_fixed_slots(char *src, size_t cap)
 {
@@ -313,6 +314,9 @@ size_t hle_ff_vs_glsl(const HleFfVsKey *k, char *buf, size_t cap)
         put(&b, "    vTex%u = t; }\n", s);
     }
     if (pos != HLE_FVF_XYZRHW) {
+        if (g_hle_horplus) {
+            put(&b, "  if ((pc.flags & %uu) != 0u) gl_Position.x *= 0.75;\n", HLE_HORPLUS_FLAG);
+        }
         /* the viewport transform here (the Vulkan viewport is the whole
          * target): NDC -> D3D screen pixels with the screen-space offset, the
          * rasterizer's subpixel placement (ff.h), -> the target's NDC (in clip

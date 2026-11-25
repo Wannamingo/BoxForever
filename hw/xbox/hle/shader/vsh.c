@@ -353,6 +353,9 @@ static void tail(Buf *bp, const HleVshKey *k, bool fogw)
     if (!k->wbuf && !k->zfree) {
         put(&b, HLE_ZNORM_GLSL("oPos.z", "zN"));
     }
+    if (g_hle_horplus && !k->zfree) {
+        put(&b, "  if ((pc.flags & %uu) != 0u && abs(w - 1.0) > 1e-4) ndc.x *= 0.75;\n", HLE_HORPLUS_FLAG);
+    }
     put(&b, "  gl_Position = vec4(ndc * w, %s, w);\n", k->wbuf || k->zfree ? "0.0" : "zN * w");
     if (k->zclamp && g_hle_glsl_zclamp) {
         put(&b, HLE_ZCLAMP_GLSL);

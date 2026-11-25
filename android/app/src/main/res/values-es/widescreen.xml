@@ -1,0 +1,4 @@
+<resources>
+  <string name="settings_horplus">Pantalla panorámica (Hor+, experimental)</string>
+  <string name="settings_horplus_desc">Amplía el campo de visión en juegos 4:3 compatibles y muestra la imagen en 16:9. Los menús, el HUD y los vídeos pueden perder su proporción. Para juegos con modo panorámico propio, usa los ajustes de vídeo de Xbox. Reinicia el juego para aplicar los cambios.</string>
+</resources>

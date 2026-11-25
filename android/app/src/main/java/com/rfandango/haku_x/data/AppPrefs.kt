@@ -112,6 +112,10 @@ class AppPrefs(context: Context) {
     get() = sp.getString(NativeCoreActivity.PREF_ASPECT, NativeCoreActivity.ASPECT_AUTO) ?: NativeCoreActivity.ASPECT_AUTO
     set(value) = sp.edit { putString(NativeCoreActivity.PREF_ASPECT, value) }
 
+  var horPlus: Boolean
+    get() = sp.getBoolean(GameSetting.HORPLUS.key, false)
+    set(value) = sp.edit { putBoolean(GameSetting.HORPLUS.key, value) }
+
   /** FXAA over each frame before it's scaled to the screen (read at game start). */
   var fxaa: Boolean
     get() = sp.getBoolean(NativeCoreActivity.PREF_FXAA, false)

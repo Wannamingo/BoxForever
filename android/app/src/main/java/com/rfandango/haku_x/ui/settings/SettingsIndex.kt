@@ -17,6 +17,7 @@ internal val GlobalSettingsIndex = listOf(
   SettingsEntry(R.string.settings_fps_limit, SettingsCategory.DISPLAY, "fps 30 60 90 120 limit фпс кадры ограничение"),
   SettingsEntry(R.string.settings_uncap, SettingsCategory.DISPLAY, "uncapped vsync frame rate вертикальная синхронизация"),
   SettingsEntry(R.string.settings_aspect, SettingsCategory.DISPLAY, "4:3 16:9 stretch aspect ratio экран пропорции растянуть"),
+  SettingsEntry(R.string.settings_horplus, SettingsCategory.DISPLAY, "hor+ 16:9 widescreen fov широкий экран поле зрения"),
   SettingsEntry(R.string.settings_show_fps, SettingsCategory.DISPLAY, "hud fps temperature cpu gpu battery температура батарея"),
   SettingsEntry(R.string.hdd_title, SettingsCategory.SYSTEM, "hdd saves data backup диск сохранения данные копия"),
   SettingsEntry(R.string.settings_language, SettingsCategory.SYSTEM, "xbox game language язык игры консоли"),

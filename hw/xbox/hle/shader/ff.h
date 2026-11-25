@@ -299,6 +299,10 @@ static inline const char *hle_push_glsl(void)
  * covers, Dead or Alive 2's eaves shadows). debug.hakux.snap=trunc: the
  * truncation (HLE_SNAP_TRUNC_FLAG), for A/B. */
 #define HLE_SNAP_TRUNC_FLAG 8192u
+/* Hor+ scales perspective clip X by 4:3 / 16:9; the output restores its
+ * proportions when displayed in 16:9. Push-block bit 14 is free. */
+extern bool g_hle_horplus;
+#define HLE_HORPLUS_FLAG 16384u
 #define HLE_SUBPIXEL_GLSL(v) \
     "  " v " = (pc.flags & 8192u) != 0u ? trunc(" v " * 16.0) / 16.0 : " v " - 0.03125;\n"
 
