@@ -11,8 +11,11 @@ An independent Android emulator for original Xbox games based on hakuX. Supports
 ## What's new in BoxForever 1.0.4
 
 - Spanish and Brazilian Portuguese are available under **Settings → Application → Interface language**.
+- **Settings → Application → Back up all settings** exports or restores one JSON file with the touchscreen layout, controller profiles, and global and per-game settings.
+- Enable the eye button in the touchscreen editor and adjust its position, size, and opacity. All buttons support 0–100% opacity.
 - Improved XISO directory lookup. Added occlusion query resets for Vulkan drivers without host query reset.
 - The emulator applies the selected Xbox AV pack at launch and after loading a save state.
+- On Vulkan device loss, the emulator cancels unfinished readbacks. After a transient presentation timeout, it retries the same frame.
 
 [BoxForever 1.0.4 release notes and validation](releases/1.0.4.en.md).
 

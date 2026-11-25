@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -65,17 +66,19 @@ internal fun SettingsBackupSection() {
     }
   }
   SettingsTarget(R.string.settings_backup_title) {
-    Section(stringResource(R.string.settings_backup_title))
-    Hint(stringResource(R.string.settings_backup_description))
-    TextButton(enabled = !busy, onClick = {
-      val date = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
-      export.launch("BoxForever-settings-$date.json")
-    }) { Text(stringResource(R.string.settings_backup_export)) }
-    TextButton(enabled = !busy, onClick = {
-      if (store.gameRunning()) report(R.string.settings_backup_game_running)
-      else importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
-    }) { Text(stringResource(R.string.settings_backup_import)) }
-    Hint(stringResource(R.string.settings_backup_limits))
+    Column {
+      Section(stringResource(R.string.settings_backup_title))
+      Hint(stringResource(R.string.settings_backup_description))
+      TextButton(enabled = !busy, onClick = {
+        val date = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
+        export.launch("BoxForever-settings-$date.json")
+      }) { Text(stringResource(R.string.settings_backup_export)) }
+      TextButton(enabled = !busy, onClick = {
+        if (store.gameRunning()) report(R.string.settings_backup_game_running)
+        else importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+      }) { Text(stringResource(R.string.settings_backup_import)) }
+      Hint(stringResource(R.string.settings_backup_limits))
+    }
   }
   pending?.let { snapshot -> ConfirmDialog(
     title = stringResource(R.string.settings_backup_import),

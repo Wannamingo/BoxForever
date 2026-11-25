@@ -1,11 +1,14 @@
 # Changelog
 
-## BoxForever 1.0.4 — 2026-11-24
+## BoxForever 1.0.4 — 2026-11-25
 
 - Added Spanish and Brazilian Portuguese interface translations. Select either language under Settings → Application → Interface language.
+- Export and restore portable settings as one JSON file, including the touchscreen layout and per-game settings.
+- Enable and customize the eye button in the touchscreen controls editor. Controls support 0–100% opacity.
 - Improved XISO directory traversal so the emulator can find files in deep directory indexes and stop cleanly if an index loops.
 - Added a Vulkan command-buffer reset path for occlusion queries on drivers without host query reset.
 - Synchronized the guest Xbox video pack at game launch and after loading an emulator save state.
+- Cancelled unfinished GPU readbacks on Vulkan device loss, woke blocked waiters, and retried presentation after transient timeouts.
 - [Русский](releases/1.0.4.ru.md) · [English](releases/1.0.4.en.md)
 
 ## BoxForever 1.0.3 — 2026-11-24
