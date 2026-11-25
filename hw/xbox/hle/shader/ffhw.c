@@ -248,7 +248,12 @@ size_t hle_ffhw_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *v
     if (b.overflow) {
         return 0;
     }
-    return hle_vsh_glsl_wrap(vk, body, k.fog != 0, buf, cap);
+    /* XF takes the dot product against one constant per output lane. The
+     * xyz coefficients of the W row distinguish perspective from affine. */
+    char perspective[96];
+    snprintf(perspective, sizeof(perspective), "dot(abs(c[%u].xyz), vec3(1.0)) > 1e-6",
+             HLE_FFHW_C_COMPOSITE + 3u);
+    return hle_vsh_glsl_wrap(vk, body, k.fog != 0, perspective, buf, cap);
 }
 
 /* ---- the specular exponent ---- */

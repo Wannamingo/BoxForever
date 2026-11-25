@@ -1,4 +1,5 @@
 #include "hw/xbox/hle/shader/vsh.h"
+#include "hw/xbox/hle/shader/ff.h"
 #include "hle_test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,6 +121,38 @@ static void test_overflow(void)
     HT_CHECK(hle_vsh_glsl(&k_prog[0][0], NSLOTS, &k, buf, 512) == 0);
 }
 
+static void test_horplus_projection(void)
+{
+    const HleVshKey key = { .in_mask = 1 };
+    uint32_t camera[][4] = {
+        { 0, 0x00e0601b, 0x08361800, 0x00001800 }, /* DP4 oPos.w, v0, c[3] */
+        { 0, 0x06000000, 0x000003ff, 0x10180000 }, /* RCC R1.x, R12.w */
+        { 0, 0x0087601b, 0x0800286c, 0x3000c801 }, /* MAD oPos.xy, v0, R1.x, c[59] */
+    };
+    const uint32_t hud[][4] = {
+        { 0, 0x002760ff, 0x0c000000, 0x00001800 }, /* MOV oPos.w, c[59].w (may be non-unit) */
+        { 0, 0x0020001b, 0x08000000, 0x0000c801 }, /* MOV oPos.xy, v0 */
+    };
+    const char *widen = "ndc.x *= 0.75";
+    HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
+    HT_CHECK(strstr(buf, widen) == NULL);
+    g_hle_horplus = true;
+    HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
+    HT_CHECK(strstr(buf, widen) != NULL);
+    HT_CHECK(strstr(buf, "abs(c[3]), vec4(1.0,1.0,1.0,0.0)") != NULL);
+    dump("vsh_horplus_camera");
+    HT_CHECK(hle_vsh_glsl(&hud[0][0], 2, &key, buf, sizeof(buf)) > 0);
+    HT_CHECK(strstr(buf, widen) == NULL);
+    dump("vsh_horplus_hud");
+
+    /* X/Y still use R1.x, but a swizzle change makes it the reciprocal of
+     * screen Z, so it cannot be used to prove division by output W. */
+    camera[1][2] &= ~(1u << 8);
+    HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
+    HT_CHECK(strstr(buf, widen) == NULL);
+    g_hle_horplus = false;
+}
+
 int main(void)
 {
     HT_RUN(test_program);
@@ -128,5 +161,6 @@ int main(void)
     HT_RUN(test_stops_at_final);
     HT_RUN(test_unwritten_fog);
     HT_RUN(test_overflow);
+    HT_RUN(test_horplus_projection);
     HT_DONE();
 }

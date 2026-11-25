@@ -256,7 +256,230 @@ static void head(Buf *bp, const HleVshKey *k)
     *bp = b;
 }
 
-static void tail(Buf *b, const HleVshKey *k, bool fogw);
+/* Match the XDK projection idiom: X and Y are divided by the same
+ * vertex-dependent dot product that the program leaves in oPos.w.
+ * We only need provenance, not the actual register values. Stop carrying
+ * evidence through operations we cannot recognize. */
+typedef enum ProjectionKind {
+    PROJ_UNIFORM, PROJ_UNKNOWN, PROJ_VERTEX, PROJ_DOT, PROJ_RECIPROCAL, PROJ_DIVIDED,
+} ProjectionKind;
+
+typedef struct ProjectionValue {
+    ProjectionKind kind;
+    int origin;                 /* identity of the value, or of the divisor */
+    bool geometry;              /* depends on an attribute's xyz lanes */
+    unsigned constant, mask;    /* position-dependent coefficients of a dot */
+} ProjectionValue;
+
+typedef struct ProjectionTrace {
+    ProjectionValue reg[13][4]; /* R0..R11 and oPos (the R12 alias) */
+    unsigned in_mask, cmp_mask;
+    int next_origin;
+} ProjectionTrace;
+
+static bool varying(ProjectionValue value)
+{
+    return value.kind == PROJ_VERTEX || value.kind == PROJ_DOT;
+}
+
+static ProjectionValue projection_input(const ProjectionTrace *trace, const Nv2aVshInput *input, unsigned lane)
+{
+    if (input->type == NV2ART_NONE) {
+        return (ProjectionValue){ .kind = PROJ_UNIFORM };
+    }
+    const unsigned swizzle = input->swizzle[lane] & 3;
+    ProjectionValue value = { .kind = PROJ_UNKNOWN };
+    if (input->type == NV2ART_TEMPORARY && input->index <= 12) {
+        value = trace->reg[input->index][swizzle];
+    } else if (input->type == NV2ART_INPUT && input->index < 16) {
+        const unsigned bit = 1u << input->index;
+        if (!(trace->in_mask & bit) || (swizzle == 3 && (trace->cmp_mask & bit))) {
+            value = (ProjectionValue){ .kind = PROJ_UNIFORM };
+        } else {
+            value = (ProjectionValue){ .kind = PROJ_VERTEX, .origin = 1 + 4 * (int)input->index + (int)swizzle,
+                                       .geometry = swizzle < 3 };
+        }
+    } else if (input->type == NV2ART_CONTEXT && !input->is_relative) {
+        value = (ProjectionValue){ .kind = PROJ_UNIFORM };
+    }
+    if (input->is_negated && (varying(value) || value.kind == PROJ_RECIPROCAL)) {
+        value.origin = -value.origin;
+    }
+    return value;
+}
+
+static ProjectionValue projection_product(ProjectionValue a, ProjectionValue b)
+{
+    if (b.kind == PROJ_RECIPROCAL || a.kind == PROJ_UNIFORM) {
+        ProjectionValue tmp = a;
+        a = b;
+        b = tmp;
+    }
+    if (a.kind == PROJ_RECIPROCAL && varying(b) && a.origin != b.origin && a.origin != -b.origin) {
+        return (ProjectionValue){ .kind = PROJ_DIVIDED, .origin = a.origin };
+    }
+    if (b.kind == PROJ_UNIFORM) {
+        return a;
+    }
+    if (varying(a) && varying(b)) {
+        return (ProjectionValue){ .kind = PROJ_VERTEX, .geometry = a.geometry || b.geometry };
+    }
+    return (ProjectionValue){ .kind = PROJ_UNKNOWN };
+}
+
+static ProjectionValue projection_sum(ProjectionValue a, ProjectionValue b)
+{
+    if (b.kind == PROJ_UNIFORM) {
+        return a;
+    }
+    if (a.kind == PROJ_UNIFORM) {
+        return b;
+    }
+    if (varying(a) && varying(b)) {
+        return (ProjectionValue){ .kind = PROJ_VERTEX, .geometry = a.geometry || b.geometry };
+    }
+    return (ProjectionValue){ .kind = PROJ_UNKNOWN };
+}
+
+static ProjectionValue projection_dot(ProjectionTrace *trace, const Nv2aVshOperation *op)
+{
+    const unsigned lanes = op->opcode == NV2AOP_DP4 ? 4 : 3;
+    const Nv2aVshInput *constant = NULL;
+    unsigned data = 0;
+    for (unsigned input = 0; input < 2; input++) {
+        const Nv2aVshInput *candidate = &op->inputs[input];
+        if (candidate->type == NV2ART_CONTEXT && !candidate->is_relative) {
+            constant = candidate;
+            data = 1 - input;
+            break;
+        }
+    }
+    bool vertex = false, geometry = false;
+    unsigned mask = 0;
+    for (unsigned lane = 0; lane < lanes; lane++) {
+        for (unsigned input = 0; input < 2; input++) {
+            ProjectionValue value = projection_input(trace, &op->inputs[input], lane);
+            if (!varying(value) && value.kind != PROJ_UNIFORM) {
+                return (ProjectionValue){ .kind = PROJ_UNKNOWN };
+            }
+            vertex |= varying(value);
+            geometry |= value.geometry;
+            if (constant && input == data && value.geometry) {
+                mask |= 1u << (constant->swizzle[lane] & 3);
+            }
+        }
+    }
+    if (op->opcode == NV2AOP_DPH) {
+        ProjectionValue offset = projection_input(trace, &op->inputs[1], 3);
+        if (!varying(offset) && offset.kind != PROJ_UNIFORM) {
+            return (ProjectionValue){ .kind = PROJ_UNKNOWN };
+        }
+        vertex |= varying(offset);
+        geometry |= offset.geometry;
+        if (constant == &op->inputs[0] && offset.kind != PROJ_UNIFORM) {
+            mask = 0; /* the implicit offset is not supplied by the same constant */
+        }
+    }
+    return (ProjectionValue){ .kind = mask ? PROJ_DOT : vertex ? PROJ_VERTEX : PROJ_UNIFORM,
+                              .origin = ++trace->next_origin, .geometry = geometry,
+                              .constant = constant ? constant->index % 192 : 0, .mask = mask };
+}
+
+static ProjectionValue projection_result(ProjectionTrace *trace, const Nv2aVshOperation *op, unsigned lane)
+{
+    ProjectionValue a = projection_input(trace, &op->inputs[0], lane);
+    ProjectionValue b = projection_input(trace, &op->inputs[1], lane);
+    ProjectionValue result = { .kind = PROJ_UNKNOWN };
+    switch (op->opcode) {
+    case NV2AOP_MOV:
+        return a;
+    case NV2AOP_DP3:
+    case NV2AOP_DP4:
+    case NV2AOP_DPH:
+        return projection_dot(trace, op);
+    case NV2AOP_RCP:
+    case NV2AOP_RCC:
+        a = projection_input(trace, &op->inputs[0], 0);
+        if (a.kind == PROJ_DOT) {
+            return (ProjectionValue){ .kind = PROJ_RECIPROCAL, .origin = a.origin };
+        }
+        return a.kind == PROJ_UNIFORM ? a : result;
+    case NV2AOP_ADD:
+        result = projection_sum(a, b);
+        break;
+    case NV2AOP_MUL:
+    case NV2AOP_MAD:
+        result = projection_product(a, b);
+        /* Scaling a reciprocal by a uniform preserves its divisor. Adding
+         * an offset to the reciprocal itself no longer does. */
+        if (op->opcode == NV2AOP_MAD && result.kind == PROJ_RECIPROCAL) {
+            return (ProjectionValue){ .kind = PROJ_UNKNOWN };
+        }
+        if (op->opcode == NV2AOP_MAD) {
+            result = projection_sum(result, projection_input(trace, &op->inputs[2], lane));
+        }
+        break;
+    default:
+        break;
+    }
+    if (varying(result)) {
+        result.kind = PROJ_VERTEX;
+        result.origin = ++trace->next_origin;
+    } else if (result.kind == PROJ_RECIPROCAL && op->opcode == NV2AOP_ADD) {
+        result = (ProjectionValue){ .kind = PROJ_UNKNOWN };
+    }
+    return result;
+}
+
+static void projection_step(ProjectionTrace *trace, const Nv2aVshStep *step)
+{
+    const Nv2aVshOperation *ops[] = { &step->mac, &step->ilu };
+    ProjectionValue result[2][4];
+    /* MAC and ILU read the registers as they were before this instruction. */
+    for (unsigned i = 0; i < 2; i++) {
+        if (ops[i]->opcode != NV2AOP_NOP) {
+            const Nv2aVshOpcode opcode = ops[i]->opcode;
+            const bool scalar = opcode == NV2AOP_DP3 || opcode == NV2AOP_DP4 || opcode == NV2AOP_DPH ||
+                opcode == NV2AOP_RCP || opcode == NV2AOP_RCC;
+            for (unsigned lane = 0; lane < 4; lane++) {
+                result[i][lane] = scalar && lane ? result[i][0] : projection_result(trace, ops[i], lane);
+            }
+        }
+    }
+    for (unsigned i = 0; i < 2; i++) {
+        if (ops[i]->opcode == NV2AOP_NOP) {
+            continue;
+        }
+        for (unsigned j = 0; j < 2; j++) {
+            const Nv2aVshOutput *out = &ops[i]->outputs[j];
+            const unsigned reg = out->type == NV2ART_TEMPORARY ? out->index :
+                out->type == NV2ART_OUTPUT && out->index == 0 ? 12 : 13;
+            if (reg <= 12) {
+                for (unsigned lane = 0; lane < 4; lane++) {
+                    if (out->writemask & (8u >> lane)) {
+                        trace->reg[reg][lane] = result[i][lane];
+                    }
+                }
+            }
+        }
+    }
+}
+
+static const char *perspective_position(const ProjectionTrace *trace, char expression[96])
+{
+    const ProjectionValue *pos = trace->reg[12];
+    if (pos[3].kind != PROJ_DOT || pos[0].kind != PROJ_DIVIDED || pos[1].kind != PROJ_DIVIDED ||
+        pos[0].origin != pos[3].origin || pos[1].origin != pos[3].origin) {
+        return NULL;
+    }
+    /* The same vertex program can draw UI with an affine matrix. Check the
+     * coefficients once per invocation, independently of the vertex's W. */
+    snprintf(expression, 96, "dot(abs(c[%u]), vec4(%u.0,%u.0,%u.0,%u.0)) > 1e-6", pos[3].constant,
+             pos[3].mask & 1u, (pos[3].mask >> 1) & 1u, (pos[3].mask >> 2) & 1u, (pos[3].mask >> 3) & 1u);
+    return expression;
+}
+
+static void tail(Buf *b, const HleVshKey *k, bool fogw, const char *perspective);
 
 size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
                     char *buf, size_t cap)
@@ -264,6 +487,8 @@ size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
     Buf b = { buf, cap, 0, false };
     head(&b, k);
     bool final = false, fogw = false;
+    const bool check_projection = g_hle_horplus && !k->zfree;
+    ProjectionTrace projection = { .in_mask = k->in_mask, .cmp_mask = k->cmp_mask, .next_origin = 64 };
     for (unsigned s = 0; s < nslots && s < HLE_VSH_MAX_SLOTS && !final; s++) {
         Nv2aVshStep st;
         memset(&st, 0, sizeof(st));
@@ -274,6 +499,9 @@ size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
         bool mac = st.mac.opcode != NV2AOP_NOP, ilu = st.ilu.opcode != NV2AOP_NOP;
         if (!mac && !ilu) {
             continue;
+        }
+        if (check_projection) {
+            projection_step(&projection, &st);
         }
         put(&b, "  { /* slot %u */\n", s);
         if (mac) {
@@ -297,22 +525,24 @@ size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
     if (!final) {
         return 0;
     }
-    tail(&b, k, fogw);
+    char perspective[96];
+    tail(&b, k, fogw, check_projection ? perspective_position(&projection, perspective) : NULL);
     return b.overflow ? 0 : b.len;
 }
 
-size_t hle_vsh_glsl_wrap(const HleVshKey *k, const char *body, bool fogw, char *buf, size_t cap)
+size_t hle_vsh_glsl_wrap(const HleVshKey *k, const char *body, bool fogw, const char *perspective,
+                         char *buf, size_t cap)
 {
     Buf b = { buf, cap, 0, false };
     head(&b, k);
     put(&b, "%s", body);
-    tail(&b, k, fogw);
+    tail(&b, k, fogw, perspective);
     return b.overflow ? 0 : b.len;
 }
 
 /* main's end: the outputs from the registers, oPos (screen space) to clip
  * space. fogw: oFog was written. */
-static void tail(Buf *bp, const HleVshKey *k, bool fogw)
+static void tail(Buf *bp, const HleVshKey *k, bool fogw, const char *perspective)
 {
     Buf b = *bp;
     /* specular off (NV2A SPECULAR_ENABLE clear): the pixel stage sees
@@ -353,8 +583,8 @@ static void tail(Buf *bp, const HleVshKey *k, bool fogw)
     if (!k->wbuf && !k->zfree) {
         put(&b, HLE_ZNORM_GLSL("oPos.z", "zN"));
     }
-    if (g_hle_horplus && !k->zfree) {
-        put(&b, "  if ((pc.flags & %uu) != 0u && abs(w - 1.0) > 1e-4) ndc.x *= 0.75;\n", HLE_HORPLUS_FLAG);
+    if (g_hle_horplus && !k->zfree && perspective) {
+        put(&b, "  if ((pc.flags & %uu) != 0u && (%s)) ndc.x *= 0.75;\n", HLE_HORPLUS_FLAG, perspective);
     }
     put(&b, "  gl_Position = vec4(ndc * w, %s, w);\n", k->wbuf || k->zfree ? "0.0" : "zN * w");
     if (k->zclamp && g_hle_glsl_zclamp) {

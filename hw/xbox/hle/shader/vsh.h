@@ -45,7 +45,9 @@ size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
 /* The same shader around body, GLSL statements in main that set the
  * registers (v0..v15 read, R0..R11 scratch; oPos in screen space as a
  * program leaves it, oD0, oD1, oB0, oB1, oT0..oT3, oFog, oPts); fogw: body
- * writes oFog. Returns the length, 0 when it does not fit. */
-size_t hle_vsh_glsl_wrap(const HleVshKey *k, const char *body, bool fogw, char *buf, size_t cap);
+ * writes oFog. A non-null perspective expression gates Hor+ in the epilogue.
+ * Returns the length, 0 when it does not fit. */
+size_t hle_vsh_glsl_wrap(const HleVshKey *k, const char *body, bool fogw, const char *perspective,
+                         char *buf, size_t cap);
 
 #endif
