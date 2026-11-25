@@ -83,7 +83,12 @@ void hle_vk_queue_lock(void)
     }
     const int64_t t0 = hle_now_ns();
     hle_mutex_lock(&g_queue_lock);
-    __atomic_fetch_add(&g_lock_wait_ns, hle_now_ns() - t0, __ATOMIC_RELAXED);
+    const int64_t elapsed = hle_now_ns() - t0;
+    __atomic_fetch_add(&g_lock_wait_ns, elapsed, __ATOMIC_RELAXED);
+    if (elapsed >= 100000000ll) {
+        hle_log("hakuX-hle-back", "VkQueue lock: start=%lld ns duration=%.1f ms",
+                (long long)t0, elapsed / 1e6);
+    }
 }
 
 void hle_vk_queue_unlock(void)

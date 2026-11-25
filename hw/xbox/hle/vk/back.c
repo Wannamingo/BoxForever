@@ -1223,7 +1223,9 @@ static bool rtd_record(const HleCmdSwap *c)
 
 static void rtd_write(uint64_t value)
 {
-    hle_tl_wait(value);
+    if (!hle_tl_wait(value)) {
+        return;
+    }
     g_autofree char *dir = g_strdup_printf("%shle_shadow", hle_host_base_path());
     g_mkdir_with_parents(dir, 0700);
     for (unsigned i = 0; i < g_rtd.nsn; i++) {
@@ -1444,7 +1446,9 @@ static uint32_t pix_texel(const uint8_t *m, uint32_t bytes)
 /* At the history frame's swap (submitted): the file. */
 static void pix_write(uint64_t value)
 {
-    hle_tl_wait(value);
+    if (!hle_tl_wait(value)) {
+        return;
+    }
     uint8_t *m = NULL;
     if (!g_pix.n || T.vkMapMemory(g_hvk.dev, g_pix.mem, 0, VK_WHOLE_SIZE, 0,
                                   (void **)&m) != VK_SUCCESS) {
@@ -2008,8 +2012,8 @@ static void fh_deliver(uint64_t n, uint64_t value)
     const uint8_t *px = NULL;
     void *map = NULL;
     if (g_fh.buf) {
-        hle_tl_wait(value);
-        if (T.vkMapMemory(g_hvk.dev, g_fh.mem, 0, VK_WHOLE_SIZE, 0, &map) == VK_SUCCESS) {
+        if (hle_tl_wait(value) &&
+            T.vkMapMemory(g_hvk.dev, g_fh.mem, 0, VK_WHOLE_SIZE, 0, &map) == VK_SUCCESS) {
             px = map;
         }
     }
@@ -2914,6 +2918,12 @@ static void *render_thread(void *opaque)
     return NULL;
 }
 
+static void wait_guest_barrier(uint64_t value)
+{
+    /* The host stops the guest on device loss. Let the fault handler unwind. */
+    hle_tl_wait(value);
+}
+
 int hle_back_start(void)
 {
     if (g_back.running) {
@@ -2957,7 +2967,7 @@ int hle_back_start(void)
         T.vkAllocateCommandBuffers(g_hvk.dev, &ai, &g_back.fr[i].cb);
     }
     hle_event_init(&g_back.kick, false);
-    hle_barrier_set_waiter(hle_tl_completed, hle_tl_wait);
+    hle_barrier_set_waiter(hle_tl_completed, wait_guest_barrier);
     hle_thread_create(&g_back.thread, "hle.render", render_thread, NULL,
                        HLE_THREAD_DETACHED);
     g_back.running = true;

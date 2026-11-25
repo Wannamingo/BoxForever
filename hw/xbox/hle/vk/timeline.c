@@ -20,9 +20,10 @@
 
 static struct {
     VkSemaphore sem;
-    uint64_t submitted, completed, timeouts;
+    uint64_t submitted, completed;
     HleThread thread;
     HleEvent ev;
+    bool initialized;
     void (*on_complete)(uint64_t);
     int64_t busy_since;                 /* the first submit after the GPU ran out of our work */
     uint32_t gap;                       /* a gap asked for (hle_tl_gap) */
@@ -84,13 +85,13 @@ bool hle_tl_land(uint64_t value, uint32_t arena_off, uint32_t pa, uint32_t len)
 {
     bool ok = false;
     hle_mutex_lock(&g_land.lock);
-    if (g_land.n < ARRAY_SIZE(g_land.q)) {
+    if (!hle_vk_lost() && g_land.n < ARRAY_SIZE(g_land.q)) {
         g_land.q[g_land.n].value = value;
         g_land.q[g_land.n].off = arena_off;
         g_land.q[g_land.n].pa = pa;
         g_land.q[g_land.n].len = len;
         g_land.q[g_land.n].copied = false;
-        hle_atomic_set(&g_land.n, g_land.n + 1);
+        g_land.n++;
         ok = true;
     }
     hle_mutex_unlock(&g_land.lock);
@@ -115,19 +116,14 @@ void hle_tl_land_copied(uint32_t arena_off, uint32_t pitch, uint32_t row, uint32
 /* The readbacks the GPU has finished (v) into guest memory: whoever publishes
  * v first lands them, so a thread that sees v sees their rows (a CPU write
  * the readback's barrier held waits for v, so lands after them) */
-static void land(uint64_t v)
+static VkResult land(uint64_t v)
 {
-    if (!hle_atomic_read(&g_land.n)) {
-        return;
-    }
-    hle_mutex_lock(&g_land.lock);
     for (unsigned i = 0; i < g_land.n;) {
         if (g_land.q[i].value > v) {
             i++;
             continue;
         }
         uint8_t *dst = g_land.q[i].copied ? hle_pa_ptr(g_land.q[i].pa, g_land.q[i].len) : NULL;
-        const uint8_t *src = (g_hland.buf ? g_hland.map : g_harena.map) + g_land.q[i].off;
         if (dst && g_hland.buf && !g_hland_coherent) {
             VkDeviceSize atom = MAX(g_hvk.props.limits.nonCoherentAtomSize, 1);
             VkDeviceSize lo = g_land.q[i].off / atom * atom;
@@ -135,47 +131,62 @@ static void land(uint64_t v)
             VkMappedMemoryRange mr = { .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
                                        .memory = g_hland.mem, .offset = lo,
                                        .size = MIN(hi, (VkDeviceSize)g_hland.alloc.size) - lo };
-            T.vkInvalidateMappedMemoryRanges(g_hvk.dev, 1, &mr);
+            VkResult r = T.vkInvalidateMappedMemoryRanges(g_hvk.dev, 1, &mr);
+            if (r != VK_SUCCESS) {
+                return r;
+            }
         }
-        for (uint32_t y = 0; dst && y < g_land.q[i].rows; y++) {
-            memcpy(dst + (size_t)y * g_land.q[i].pitch, src + (size_t)y * g_land.q[i].pitch,
-                   g_land.q[i].row);
+        if (dst) {
+            const uint8_t *src = (g_hland.buf ? g_hland.map : g_harena.map) + g_land.q[i].off;
+            for (uint32_t y = 0; y < g_land.q[i].rows; y++) {
+                memcpy(dst + (size_t)y * g_land.q[i].pitch, src + (size_t)y * g_land.q[i].pitch,
+                       g_land.q[i].row);
+            }
         }
         g_land.q[i] = g_land.q[--g_land.n];
-        hle_atomic_set(&g_land.n, g_land.n);
     }
-    hle_mutex_unlock(&g_land.lock);
+    return VK_SUCCESS;
 }
 
 /* `completed` only moves forward. Waiters publish what they observed too, so
  * after hle_tl_wait(v) returns, hle_tl_completed() >= v on every thread; the
  * watcher alone would publish it a little later (the barrier self-test saw
  * stores ordered by the wait but `completed` still behind). */
-static void publish(uint64_t v)
+static void wait_failed(VkResult result, const char *operation, uint64_t expected);
+
+static bool publish(uint64_t v)
 {
-    land(v);
+    hle_mutex_lock(&g_land.lock);
+    if (hle_vk_lost()) {
+        hle_mutex_unlock(&g_land.lock);
+        return false;
+    }
+    VkResult r = land(v);
+    if (r != VK_SUCCESS) {
+        g_land.n = 0;
+        hle_mutex_unlock(&g_land.lock);
+        wait_failed(r, "vkInvalidateMappedMemoryRanges (readback)", v);
+        return false;
+    }
+    if (v > hle_atomic_read(&g_tl.completed)) {
+        hle_atomic_set(&g_tl.completed, v);
+    }
+    hle_mutex_unlock(&g_land.lock);
     bool measure=hle_atomic_read(&g_queue_measure.enabled);
     if(measure)hle_mutex_lock(&g_queue_measure.lock);
-    uint64_t cur = hle_atomic_read(&g_tl.completed);
-    while (v > cur) {
-        uint64_t prev = hle_atomic_cmpxchg(&g_tl.completed, cur, v);
-        if (prev == cur) {
-            break;
-        }
-        cur = prev;
-    }
     if(measure) {
         if(g_queue_measure.since && hle_atomic_read(&g_tl.completed)>=hle_atomic_read(&g_tl.submitted)) {
             g_queue_measure.total+=hle_now_ns()-g_queue_measure.since;g_queue_measure.since=0;
         }
         hle_mutex_unlock(&g_queue_measure.lock);
     }
+    return true;
 }
 
 static void wait_failed(VkResult result, const char *operation, uint64_t expected)
 {
     const uint64_t completed = hle_atomic_read(&g_tl.completed);
-    if (completed != UINT64_MAX) {
+    if (!hle_vk_lost()) {
         hle_log("hakuX-hle-back",
                 "%s failed (VkResult %d): expected %llu, submitted %llu, completed %llu",
                 operation, result, (unsigned long long)expected,
@@ -185,8 +196,27 @@ static void wait_failed(VkResult result, const char *operation, uint64_t expecte
     hle_vk_lose(result, operation);
 }
 
+static void log_wait(const char *operation, int64_t start, VkResult result, uint64_t expected)
+{
+    int64_t elapsed = hle_now_ns() - start;
+    if (elapsed < 100000000ll) {
+        return;
+    }
+    unsigned queued = 0;
+    if (!g_hvk.caps.timeline) {
+        hle_mutex_lock(&g_fences.lock);
+        queued = g_fences.count;
+        hle_mutex_unlock(&g_fences.lock);
+    }
+    hle_log("hakuX-hle-back", "GPU wait (%s): start=%lld ns duration=%.1f ms result=%d expected=%llu "
+            "submitted=%llu completed=%llu fences=%u", operation, (long long)start, elapsed / 1e6,
+            result, (unsigned long long)expected, (unsigned long long)hle_tl_submitted(),
+            (unsigned long long)hle_tl_completed(), queued);
+}
+
 static void *fence_watch_thread(void *opaque)
 {
+    int64_t start = 0, last_log = 0;
     for (;;) {
         hle_mutex_lock(&g_fences.lock);
         while (!hle_vk_lost() && (!g_fences.count ||
@@ -201,15 +231,27 @@ static void *fence_watch_thread(void *opaque)
         VkFence fence = g_fences.fence[slot];
         uint64_t value = g_fences.value[slot];
         hle_mutex_unlock(&g_fences.lock);
+        if (!start) {
+            start = last_log = hle_now_ns();
+        }
         VkResult r = T.vkWaitForFences(g_hvk.dev, 1, &fence, VK_TRUE, 100000000ull);
         if (r == VK_TIMEOUT) {
+            const int64_t now = hle_now_ns();
+            if (now - last_log >= 1000000000ll) {
+                log_wait("fence watcher", start, r, value);
+                last_log = now;
+            }
             continue;
         }
+        log_wait("fence watcher", start, r, value);
+        start = 0;
         if (r != VK_SUCCESS) {
             wait_failed(r, "vkWaitForFences (render timeline)", value);
             return NULL;
         }
-        publish(value);               /* readbacks land before CPU waiters wake */
+        if (!publish(value)) {        /* readbacks land before CPU waiters wake */
+            return NULL;
+        }
         hle_mutex_lock(&g_fences.lock);
         g_fences.head = (slot + 1) % FENCE_SLOTS;
         g_fences.count--;
@@ -243,7 +285,8 @@ VkResult hle_tl_submit(const VkSubmitInfo2 *submit, uint64_t value)
         }
     }
     hle_vk_queue_lock();
-    VkResult r = T.vkQueueSubmit2(g_hvk.queue, 1, submit, fence);
+    VkResult r = hle_vk_lost() ? VK_ERROR_DEVICE_LOST :
+                 T.vkQueueSubmit2(g_hvk.queue, 1, submit, fence);
     hle_vk_queue_unlock();
     if (!g_hvk.caps.timeline) {
         if (r == VK_SUCCESS) {
@@ -257,6 +300,9 @@ VkResult hle_tl_submit(const VkSubmitInfo2 *submit, uint64_t value)
 
 VkResult hle_tl_sem_wait(VkSemaphore sem, uint64_t value, uint64_t timeout_ns)
 {
+    if (hle_vk_lost()) {
+        return VK_ERROR_DEVICE_LOST;
+    }
     if (!hle_quirk(HLE_QUIRK_NO_SEM_WAIT)) {
         const VkSemaphoreWaitInfo wi = {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, .semaphoreCount = 1,
@@ -265,6 +311,9 @@ VkResult hle_tl_sem_wait(VkSemaphore sem, uint64_t value, uint64_t timeout_ns)
     }
     const int64_t start = hle_now_ns();
     for (;;) {
+        if (hle_vk_lost()) {
+            return VK_ERROR_DEVICE_LOST;
+        }
         uint64_t completed = 0;
         VkResult r = T.vkGetSemaphoreCounterValue(g_hvk.dev, sem, &completed);
         if (r != VK_SUCCESS || completed >= value) {
@@ -282,22 +331,31 @@ VkResult hle_tl_sem_wait(VkSemaphore sem, uint64_t value, uint64_t timeout_ns)
 static void *watch_thread(void *opaque)
 {
     uint64_t done = 0;
+    int64_t start = 0, last_log = 0;
     for (;;) {
         hle_event_reset(&g_tl.ev);
+        if (hle_vk_lost()) {
+            return NULL;
+        }
         if (done >= hle_atomic_read(&g_tl.submitted)) {
             hle_event_wait(&g_tl.ev);
             continue;
         }
         uint64_t want = done + 1;
+        if (!start) {
+            start = last_log = hle_now_ns();
+        }
         VkResult r = hle_tl_sem_wait(g_tl.sem, want, 100000000ull);
         if (r == VK_TIMEOUT) {
-            if (++g_tl.timeouts % 10 == 0) {
-                hle_log("hakuX-hle-back", "GPU has not reached %llu for %llu s",
-                        (unsigned long long)want,
-                        (unsigned long long)(g_tl.timeouts / 10));
+            const int64_t now = hle_now_ns();
+            if (now - last_log >= 1000000000ll) {
+                log_wait("timeline watcher", start, r, want);
+                last_log = now;
             }
             continue;
         }
+        log_wait("timeline watcher", start, r, want);
+        start = 0;
         if (r != VK_SUCCESS) {
             wait_failed(r, "vkWaitSemaphores (timeline)", want);
             return NULL;
@@ -308,8 +366,10 @@ static void *watch_thread(void *opaque)
             wait_failed(r, "vkGetSemaphoreCounterValue (timeline)", want);
             return NULL;
         }
+        if (!publish(v)) {
+            return NULL;
+        }
         done = v;
-        publish(v);
         if (g_tl.on_complete) {
             g_tl.on_complete(v);
         }
@@ -350,6 +410,7 @@ int hle_tl_init(void (*on_complete)(uint64_t))
 #endif
     hle_mutex_init(&g_land.lock);
     hle_event_init(&g_tl.ev, false);
+    hle_atomic_set(&g_tl.initialized, true);
     hle_log("hakuX-hle-back", "GPU completion: %s",
             g_hvk.caps.timeline ? "timeline semaphore" : "ordered Vulkan fences (MaliSX2 compatible)");
     hle_thread_create(&g_tl.thread, "hle.timeline",
@@ -365,6 +426,9 @@ VkSemaphore hle_tl_sem(void)
 
 void hle_tl_signaled(uint64_t value)
 {
+    if (hle_vk_lost()) {
+        return;
+    }
     bool measure=hle_atomic_read(&g_queue_measure.enabled);
     if(measure)hle_mutex_lock(&g_queue_measure.lock);
     if (hle_atomic_read(&g_tl.completed) >= hle_atomic_read(&g_tl.submitted)) {
@@ -372,7 +436,7 @@ void hle_tl_signaled(uint64_t value)
     }
     hle_atomic_set(&g_tl.submitted, value);
     if(measure) {
-        if(!g_queue_measure.since)g_queue_measure.since=hle_now_ns();
+        if(!g_queue_measure.since && !hle_vk_lost())g_queue_measure.since=hle_now_ns();
         hle_mutex_unlock(&g_queue_measure.lock);
     }
     hle_event_set(&g_tl.ev);
@@ -388,7 +452,7 @@ void hle_tl_signaled(uint64_t value)
  * at priority 7, native/app/vkdriver.c) only runs when it does. */
 int64_t hle_tl_busy_ns(void)
 {
-    if (!g_tl.sem || hle_atomic_read(&g_tl.completed) >= hle_atomic_read(&g_tl.submitted)) {
+    if (!g_tl.sem || hle_vk_lost() || hle_atomic_read(&g_tl.completed) >= hle_atomic_read(&g_tl.submitted)) {
         return 0;
     }
     return hle_now_ns() - hle_atomic_read(&g_tl.busy_since);
@@ -413,7 +477,9 @@ void hle_tl_gap_serve(void)
         return;
     }
     hle_atomic_set(&g_tl.gap, 0);
-    hle_tl_wait(hle_atomic_read(&g_tl.submitted));
+    if (!hle_tl_wait(hle_atomic_read(&g_tl.submitted))) {
+        return;
+    }
     if (g_tl.gap_hold_ns > 0) {
         struct timespec ts = { g_tl.gap_hold_ns / 1000000000, g_tl.gap_hold_ns % 1000000000 };
         nanosleep(&ts, NULL);
@@ -438,12 +504,20 @@ uint64_t hle_tl_submitted(void)
     return hle_atomic_read(&g_tl.submitted);
 }
 
-/* Every value reached: completed goes to the end of time (it only moves
- * forward), so the waits above and hle_tl_completed's readers stop waiting;
- * the readbacks queued land (with what they have). */
 void hle_tl_lose(void)
 {
-    publish(UINT64_MAX);
+    if (!hle_atomic_read(&g_tl.initialized)) {
+        return;
+    }
+    hle_mutex_lock(&g_land.lock);
+    g_land.n = 0;
+    hle_mutex_unlock(&g_land.lock);
+    hle_mutex_lock(&g_queue_measure.lock);
+    if (g_queue_measure.since) {
+        g_queue_measure.total += hle_now_ns() - g_queue_measure.since;
+        g_queue_measure.since = 0;
+    }
+    hle_mutex_unlock(&g_queue_measure.lock);
     hle_event_set(&g_tl.ev);
     if (g_fences.init) {
         hle_mutex_lock(&g_fences.lock);
@@ -452,22 +526,25 @@ void hle_tl_lose(void)
     }
 }
 
-void hle_tl_wait(uint64_t value)
+bool hle_tl_wait(uint64_t value)
 {
     if (hle_tl_completed() >= value) {
-        return;
+        return true;
     }
+    const int64_t start = hle_now_ns();
     uint32_t pa = hle_hitch_enter(HLE_ACT_GPU);
     if (!g_hvk.caps.timeline) {
         hle_mutex_lock(&g_fences.lock);
-        while (hle_tl_completed() < value) {
+        while (!hle_vk_lost() && hle_tl_completed() < value) {
             hle_cond_wait(&g_fences.changed, &g_fences.lock);
         }
         hle_mutex_unlock(&g_fences.lock);
         hle_hitch_leave(pa);
-        return;
+        bool ready = hle_tl_completed() >= value;
+        log_wait("CPU on fences", start, ready ? VK_SUCCESS : VK_ERROR_DEVICE_LOST, value);
+        return ready;
     }
-    while (hle_tl_completed() < value) {
+    while (!hle_vk_lost() && hle_tl_completed() < value) {
         VkResult r = hle_tl_sem_wait(g_tl.sem, value, 100000000ull);
         if (r != VK_SUCCESS && r != VK_TIMEOUT) {
             wait_failed(r, "vkWaitSemaphores", value);
@@ -479,8 +556,13 @@ void hle_tl_wait(uint64_t value)
             wait_failed(r, "vkGetSemaphoreCounterValue", value);
             break;
         }
-        publish(v);
+        if (!publish(v)) {
+            break;
+        }
     }
     hle_hitch_leave(pa);
+    bool ready = hle_tl_completed() >= value;
+    log_wait("CPU on timeline", start, ready ? VK_SUCCESS : VK_ERROR_DEVICE_LOST, value);
+    return ready;
 }
 

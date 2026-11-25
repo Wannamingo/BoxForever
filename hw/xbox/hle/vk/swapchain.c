@@ -33,6 +33,7 @@
 #include "hw/xbox/hle/vk/back_int.h"
 #include "hw/xbox/hle/vk/compat.h"
 #include "hw/xbox/hle/vk/display.h"
+#include "hw/xbox/hle/vk/present_wait.h"
 #include "hw/xbox/hle/vk/quirks.h"
 #include "hw/xbox/hle/vk/swapchain.h"
 
@@ -110,6 +111,7 @@ static struct {
      * key (hle_present_unchanged) */
     bool shown;
     uint64_t shown_key;
+    HlePendingPresent pending;
 } g_ps;
 
 /* Kept outside the surface's lifetime. Neutral values retain the old gamma/SGSR path exactly. */
@@ -159,13 +161,13 @@ int hle_present_shader_status(void)
     return status;
 }
 
-static void shader_presented(bool fallback)
+static void shader_presented(uint32_t generation, bool fallback)
 {
     const int status = fallback ? HLE_SHADER_FALLBACK : HLE_SHADER_ACTIVE;
-    if (g_shader_presented_gen == g_shader_applied_gen && g_shader_last_presentation == status) {
+    if (g_shader_presented_gen == generation && g_shader_last_presentation == status) {
         return;
     }
-    g_shader_presented_gen = g_shader_applied_gen;
+    g_shader_presented_gen = generation;
     g_shader_last_presentation = status;
     pthread_mutex_lock(&g_shader_lock);
     if (g_shader_presented_gen == g_shader_pending_gen) {
@@ -898,14 +900,21 @@ static bool make_swapchain(uint32_t w, uint32_t h)
 
 /* ---- each refresh ---- */
 
-static bool wait_value(uint64_t v)
+/* The presenter's calls and waits (statistics) */
+static int64_t g_submit_ns, g_present_ns, g_wait_ns, g_acquire_ns;
+
+static VkResult wait_value(uint64_t v, uint64_t timeout)
 {
     if (v <= g_ps.completed) {
-        return true;                    /* zero, or already observed before a fence was reused */
+        return VK_SUCCESS;              /* zero, or already observed before a fence was reused */
     }
+    if (hle_vk_lost()) {
+        return VK_ERROR_DEVICE_LOST;
+    }
+    const int64_t start = hle_now_ns();
     VkResult r;
     if (g_hvk.caps.timeline) {
-        r = hle_tl_sem_wait(g_ps.tl, v, 1000000000ull);
+        r = hle_tl_sem_wait(g_ps.tl, v, timeout);
     } else {
         VkFence fence = VK_NULL_HANDLE;
         for (unsigned i = 0; i < PS_FRAMES; i++) {
@@ -916,21 +925,25 @@ static bool wait_value(uint64_t v)
         }
         if (!fence) {
             hle_log("hakuX-hle-back", "present: no fence for an outstanding sequence");
-            g_ps.failed = true;
-            return false;
+            return VK_ERROR_UNKNOWN;
         }
-        r = T.vkWaitForFences(g_hvk.dev, 1, &fence, VK_TRUE, 1000000000ull);
+        r = T.vkWaitForFences(g_hvk.dev, 1, &fence, VK_TRUE, timeout);
+    }
+    const int64_t elapsed = hle_now_ns() - start;
+    g_wait_ns += elapsed;
+    if (elapsed >= 100000000ll || (r != VK_SUCCESS && r != VK_TIMEOUT)) {
+        hle_log("hakuX-hle-back",
+                "present wait: start=%lld ns duration=%.1f ms result=%d expected=%llu submitted=%llu completed=%llu",
+                (long long)start, elapsed / 1e6, r, (unsigned long long)v,
+                (unsigned long long)g_ps.submitted, (unsigned long long)g_ps.completed);
     }
     if (r == VK_SUCCESS) {
         g_ps.completed = v;              /* this queue completes the earlier sequences too */
-    } else if (r == VK_ERROR_DEVICE_LOST) {
-        hle_vk_lose(r, "present completion");
+    } else if (r != VK_TIMEOUT) {
+        hle_vk_check(r, "present completion");
     }
-    return r == VK_SUCCESS;
+    return r;
 }
-
-/* the presenter's calls and waits (statistics) */
-static int64_t g_submit_ns, g_present_ns, g_wait_ns, g_acquire_ns;
 
 static void lose_window(void)
 {
@@ -938,9 +951,52 @@ static void lose_window(void)
     drop_window();
 }
 
+static void present_submitted(bool cpu_wait, uint64_t key, uint32_t shader_gen, bool shader_fallback)
+{
+    const VkPresentInfoKHR pi = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, .waitSemaphoreCount = cpu_wait ? 0 : 1,
+        .pWaitSemaphores = &g_ps.drawn[g_ps.idx], .swapchainCount = 1,
+        .pSwapchains = &g_ps.sc, .pImageIndices = &g_ps.idx };
+    hle_vk_queue_lock();
+    const int64_t start = hle_now_ns();
+    VkResult pr = hle_vk_lost() ? VK_ERROR_DEVICE_LOST : T.vkQueuePresentKHR(g_hvk.queue, &pi);
+    const int64_t elapsed = hle_now_ns() - start;
+    hle_vk_queue_unlock();
+    g_present_ns += elapsed;
+    if (elapsed >= 100000000ll) {
+        hle_log("hakuX-hle-back", "vkQueuePresentKHR: start=%lld ns duration=%.1f ms result=%d "
+                "submitted=%llu completed=%llu", (long long)start, elapsed / 1e6, pr,
+                (unsigned long long)g_ps.submitted, (unsigned long long)g_ps.completed);
+    }
+    if (pr == VK_SUCCESS || pr == VK_SUBOPTIMAL_KHR) {
+        g_ps.shown = true;
+        g_ps.shown_key = key;
+        if (g_ps.have) {
+            shader_presented(shader_gen, shader_fallback);
+        }
+    }
+    if (pr == VK_ERROR_OUT_OF_DATE_KHR || (pr == VK_SUBOPTIMAL_KHR && g_ps.follows)) {
+        g_ps.stale = true;
+    } else if (pr == VK_ERROR_SURFACE_LOST_KHR) {
+        lose_window();
+    } else if (pr != VK_SUCCESS && pr != VK_SUBOPTIMAL_KHR) {
+        hle_vk_check(pr, "vkQueuePresentKHR");
+        g_ps.failed = true;
+    }
+    g_ps.cur = (g_ps.cur + 1) % PS_FRAMES;
+}
+
+static void present_pending(uint64_t timeout)
+{
+    const VkResult r = hle_present_wait_pending(&g_ps.pending, timeout, wait_value, present_submitted);
+    if (r != VK_TIMEOUT && r != VK_SUCCESS) {
+        g_ps.failed = true;
+    }
+}
+
 bool hle_present_unchanged(struct ANativeWindow *win, uint64_t key)
 {
-    if (!g_ps.shown || !win || win != g_ps.win || g_ps.stale || !g_ps.sc || key != g_ps.shown_key ||
+    if (g_ps.pending.value || !g_ps.shown || !win || win != g_ps.win || g_ps.stale || !g_ps.sc || key != g_ps.shown_key ||
         (uint32_t)ANativeWindow_getWidth(win) != g_ps.wsize.width ||
         (uint32_t)ANativeWindow_getHeight(win) != g_ps.wsize.height || hle_disp_gamma_seq() != g_ps.ramp_gen) {
         return false;
@@ -956,6 +1012,11 @@ bool hle_present_unchanged(struct ANativeWindow *win, uint64_t key)
 bool hle_present_begin(struct ANativeWindow *win, uint32_t *w, uint32_t *h)
 {
     if (g_ps.failed || !hle_vk_ready() || hle_vk_lost()) {
+        return false;
+    }
+    if (g_ps.pending.value) {
+        /* Keep the image, swapchain, fence and semaphore until the submit completes. */
+        present_pending(5000000ull);
         return false;
     }
     if (!g_ps.inited) {
@@ -991,13 +1052,13 @@ bool hle_present_begin(struct ANativeWindow *win, uint32_t *w, uint32_t *h)
         return false;
     }
     PsFrame *f = &g_ps.fr[g_ps.cur];
-    const int64_t tw0 = hle_now_ns();
-    if (!wait_value(f->value)) {
+    VkResult r = wait_value(f->value, 1000000000ull);
+    if (r != VK_SUCCESS) {
+        g_ps.failed = r != VK_TIMEOUT;
         return false;
     }
     const int64_t ta0 = hle_now_ns();
-    g_wait_ns += ta0 - tw0;
-    VkResult r = T.vkAcquireNextImageKHR(g_hvk.dev, g_ps.sc, 100000000ull, f->acquired, VK_NULL_HANDLE,
+    r = T.vkAcquireNextImageKHR(g_hvk.dev, g_ps.sc, 100000000ull, f->acquired, VK_NULL_HANDLE,
                                          &g_ps.idx);
     g_acquire_ns += hle_now_ns() - ta0;
     if (r == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1059,7 +1120,9 @@ static bool fxaa_target(uint32_t w, uint32_t h)
         return true;
     }
     if (g_ps.fx_img) {
-        wait_value(g_ps.submitted);
+        if (wait_value(g_ps.submitted, 1000000000ull) != VK_SUCCESS) {
+            return false;
+        }
         T.vkDestroyImageView(g_hvk.dev, g_ps.fx_view, NULL);
         T.vkDestroyImage(g_hvk.dev, g_ps.fx_img, NULL);
         T.vkFreeMemory(g_hvk.dev, g_ps.fx_mem, NULL);
@@ -1106,7 +1169,9 @@ static bool fsr_target(uint32_t w, uint32_t h)
         return true;
     }
     if (g_ps.up_img) {
-        wait_value(g_ps.submitted);
+        if (wait_value(g_ps.submitted, 1000000000ull) != VK_SUCCESS) {
+            return false;
+        }
         T.vkDestroyImageView(g_hvk.dev, g_ps.up_view, NULL);
         T.vkDestroyImage(g_hvk.dev, g_ps.up_img, NULL);
         T.vkFreeMemory(g_hvk.dev, g_ps.up_mem, NULL);
@@ -1407,9 +1472,6 @@ void hle_present_end(float sx, float sy, bool fxaa, int upscale, bool average, u
                          .pCommandBufferInfos = &cbi,
                          .signalSemaphoreInfoCount = (g_hvk.caps.timeline ? 1 : 0) + (cpu_wait ? 0 : 1),
                          .pSignalSemaphoreInfos = sig + (g_hvk.caps.timeline ? 0 : 1) };
-    VkPresentInfoKHR pi = { .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, .waitSemaphoreCount = cpu_wait ? 0 : 1,
-                            .pWaitSemaphores = &g_ps.drawn[g_ps.idx], .swapchainCount = 1,
-                            .pSwapchains = &g_ps.sc, .pImageIndices = &g_ps.idx };
     VkResult r = VK_SUCCESS;
     if (!g_hvk.caps.timeline) {
         r = T.vkResetFences(g_hvk.dev, 1, &f->done); /* begin waited before reusing this frame */
@@ -1417,7 +1479,8 @@ void hle_present_end(float sx, float sy, bool fxaa, int upscale, bool average, u
     if (r == VK_SUCCESS) {
         hle_vk_queue_lock();
         const int64_t ts0 = hle_now_ns();
-        r = T.vkQueueSubmit2(g_hvk.queue, 1, &si, g_hvk.caps.timeline ? VK_NULL_HANDLE : f->done);
+        r = hle_vk_lost() ? VK_ERROR_DEVICE_LOST :
+            T.vkQueueSubmit2(g_hvk.queue, 1, &si, g_hvk.caps.timeline ? VK_NULL_HANDLE : f->done);
         g_submit_ns += hle_now_ns() - ts0;
         hle_vk_queue_unlock();
     }
@@ -1426,46 +1489,22 @@ void hle_present_end(float sx, float sy, bool fxaa, int upscale, bool average, u
         f->value = value;
     } else {
         hle_vk_check(r, "vkQueueSubmit2 (present)");
+        g_ps.failed = true;            /* no submit consumed this frame's acquire semaphore */
     }
     if (g_ps.using) {
         g_ps.using = false;
         hle_disp_use_end();
     }
-    VkResult pr = r;
     if (r == VK_SUCCESS) {
+        const unsigned effect = shader == 3 ? P_NTSC : shader == 4 ? P_TEMPORAL : P_CRT;
+        const bool fallback = shader && !g_ps.pipe[effect];
         if (cpu_wait) {
-            const int64_t tw0 = hle_now_ns();
-            const bool ready = wait_value(value);
-            g_wait_ns += hle_now_ns() - tw0;
-            if (!ready) {
-                /* Never present an image whose render has not completed. */
-                hle_log("hakuX-hle-back", "present: completion wait failed; presentation stopped");
-                g_ps.failed = true;
-                return;
-            }
-        }
-        hle_vk_queue_lock();
-        const int64_t tp0 = hle_now_ns();
-        pr = T.vkQueuePresentKHR(g_hvk.queue, &pi);
-        g_present_ns += hle_now_ns() - tp0;
-        hle_vk_queue_unlock();
-    }
-    if (pr == VK_SUCCESS || pr == VK_SUBOPTIMAL_KHR) {
-        g_ps.shown = true;
-        g_ps.shown_key = key;
-        if (g_ps.have) {
-            const unsigned effect = shader == 3 ? P_NTSC : shader == 4 ? P_TEMPORAL : P_CRT;
-            shader_presented(shader && !g_ps.pipe[effect]);
+            g_ps.pending = (HlePendingPresent){value, key, g_shader_applied_gen, fallback};
+            present_pending(1000000000ull);
+        } else {
+            present_submitted(false, key, g_shader_applied_gen, fallback);
         }
     }
-    if (pr == VK_ERROR_OUT_OF_DATE_KHR || (pr == VK_SUBOPTIMAL_KHR && g_ps.follows)) {
-        g_ps.stale = true;
-    } else if (pr == VK_ERROR_SURFACE_LOST_KHR) {
-        lose_window();
-    } else if (pr == VK_ERROR_DEVICE_LOST) {
-        hle_vk_lose(pr, "vkQueuePresentKHR");
-    }
-    g_ps.cur = (g_ps.cur + 1) % PS_FRAMES;
     static int64_t s_t0;
     const int64_t now = hle_now_ns();
     if (!s_t0) {

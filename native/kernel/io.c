@@ -693,6 +693,7 @@ typedef struct DiscJob {
     bool sync;               /* a synchronous handle's: the thread waits for it (nc_ke_block) */
     bool ok;
     uint64_t movie;
+    uint64_t queued_ns, started_ns, ready_ns, finished_ns;
     int err;
     char path[64]; /* for the log */
 } DiscJob;
@@ -719,8 +720,14 @@ static void *reader_thread(void *arg)
         g_reader.head = (g_reader.head + 1) % DISC_JOBS;
         g_reader.n--;
         pthread_mutex_unlock(&g_reader.mu);
+        if (j.queued_ns) {
+            j.started_ns = nc_irq_now_ns();
+        }
         if (j.gpu && nc_vm_dma.wait) {
             nc_vm_dma.wait(j.gpu);
+        }
+        if (j.queued_ns) {
+            j.ready_ns = nc_irq_now_ns();
         }
         errno = 0;
         j.ok = true;
@@ -739,6 +746,9 @@ static void *reader_thread(void *arg)
             }
         }
         pthread_mutex_lock(&g_reader.mu);
+        if (j.queued_ns) {
+            j.finished_ns = nc_irq_now_ns();
+        }
         g_reader.done[g_reader.ndone++] = j;
         pthread_mutex_unlock(&g_reader.mu);
         nc_irq_post_work();
@@ -837,6 +847,9 @@ static bool disc_read_later(NcKernel *k, const NcFile *nf, const uint32_t *a, ui
     const bool queued = g_reader.started && g_reader.busy < DISC_JOBS;
     if (queued) {
         pin_read(k, &j, 1);
+        if (nc_irq_trace_stalls()) {
+            j.queued_ns = nc_irq_now_ns();
+        }
         g_reader.q[(g_reader.head + g_reader.n++) % DISC_JOBS] = j;
         g_reader.busy++;
         pthread_cond_signal(&g_reader.cv);
@@ -856,6 +869,15 @@ static bool disc_read_later(NcKernel *k, const NcFile *nf, const uint32_t *a, ui
 
 static void disc_read_done(NcKernel *k, const DiscJob *j)
 {
+    const uint64_t delivered_ns = j->queued_ns ? nc_irq_now_ns() : 0;
+    if (delivered_ns && delivered_ns - j->queued_ns >= 100000000ull) {
+        nc_log("hakuX-stall", "io tid=%d guest=%u event=%08x start=%llu ns bytes=%u gpu_value=%llu "
+               "queue=%.1f ms gpu_wait=%.1f ms read=%.1f ms delivery=%.1f ms ok=%u",
+               gettid(), j->thread_id, j->event, (unsigned long long)j->queued_ns, j->n,
+               (unsigned long long)j->gpu, (j->started_ns - j->queued_ns) / 1e6,
+               (j->ready_ns - j->started_ns) / 1e6, (j->finished_ns - j->ready_ns) / 1e6,
+               (delivered_ns - j->finished_ns) / 1e6, (unsigned)j->ok);
+    }
     pin_read(k, j, -1);
     const bool ok = j->ok;
     const int err = j->err;

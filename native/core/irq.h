@@ -42,6 +42,8 @@ uint64_t nc_irq_cpu_ns(void);
  * delivery it ran little: this much of it waited for a CPU, the rest it
  * slept or blocked. */
 uint64_t nc_irq_rise_delay_ns(unsigned line);
+/* NC_TRACE_STALLS=1: report long waits and I/O on the host monotonic clock. */
+bool nc_irq_trace_stalls(void);
 uint64_t nc_irq_delay_ns(void);
 /* Unmasks (on) or masks a line: KeConnectInterrupt / KeDisconnectInterrupt. */
 void nc_irq_enable(unsigned line, bool on);
@@ -49,6 +51,14 @@ void nc_irq_enable(unsigned line, bool on);
  * time reaches deadline_ns (0: wait for a line only, up to max_ns). Returns
  * the lines. */
 uint32_t nc_irq_idle_wait(uint64_t deadline_ns, uint64_t max_ns);
+typedef struct NcIrqIdleTrace {
+    uint64_t start_ns, elapsed_ns;
+    const char *reason;
+    int wait_result;
+    uint32_t lines;
+    bool work;
+} NcIrqIdleTrace;
+uint32_t nc_irq_idle_wait_trace(uint64_t deadline_ns, uint64_t max_ns, NcIrqIdleTrace *trace);
 /* Work for the kernel from a host thread (a disc read done): rings the
  * doorbell and wakes an idle wait as a line does, but delivers no interrupt.
  * nc_irq_take_work says whether any was posted since it last asked. */

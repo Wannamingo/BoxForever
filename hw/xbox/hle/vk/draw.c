@@ -937,8 +937,13 @@ static void tex_free(HleVkTex *t)
 {
     if (t->img) {
         if (g_nretire == TEX_RETIRE_MAX) {
-            hle_tl_wait(hle_tl_submitted());    /* full: everything before is done */
-            hle_draw_tex_reap(hle_tl_completed());
+            if (hle_tl_wait(hle_tl_submitted())) {
+                hle_draw_tex_reap(hle_tl_completed());
+            }
+            if (g_nretire == TEX_RETIRE_MAX) {
+                /* After loss the process is exiting. Leave these handles to device teardown. */
+                return;
+            }
         }
         g_retire[g_nretire++] = (typeof(g_retire[0])){
             .img = t->img, .view = t->view, .cube_view = t->cube_view, .mem = t->mem,
@@ -1123,8 +1128,12 @@ void hle_draw_forget_surf(uint32_t id)
             continue;
         }
         if (g_nretire == TEX_RETIRE_MAX) {
-            hle_tl_wait(hle_tl_submitted());
-            hle_draw_tex_reap(hle_tl_completed());
+            if (hle_tl_wait(hle_tl_submitted())) {
+                hle_draw_tex_reap(hle_tl_completed());
+            }
+            if (g_nretire == TEX_RETIRE_MAX) {
+                return;
+            }
         }
         g_retire[g_nretire++] = (typeof(g_retire[0])){
             .slot = g_dr.sslot[i].slot, .after = HLE_SURF_PARKED };

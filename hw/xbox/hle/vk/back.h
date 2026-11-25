@@ -21,9 +21,9 @@ void hle_back_urgent(void);
 /* Timeline value = GPU time (§5.12). Any thread. */
 uint64_t hle_tl_completed(void);
 uint64_t hle_tl_submitted(void);
-void hle_tl_wait(uint64_t value);
-/* The device lost (hle_vk_lose): every value counts as reached, so no
- * thread waits on the GPU any more. */
+/* False if GPU progress could not be confirmed after a device failure. */
+bool hle_tl_wait(uint64_t value);
+/* Cancel outstanding readbacks and wake waiters after hle_vk_lose. */
 void hle_tl_lose(void);
 /* How long the GPU has been on our work without running out of it (0: it's
  * out now), and a moment of idle GPU asked for: the app's window, on a GPU

@@ -5,6 +5,7 @@
  */
 #include "native/core/irq.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -426,12 +427,25 @@ bool nc_irq_take_work(void)
     return __atomic_load_n(&g_work, __ATOMIC_ACQUIRE) && __atomic_exchange_n(&g_work, 0, __ATOMIC_ACQ_REL);
 }
 
-uint32_t nc_irq_idle_wait(uint64_t deadline_ns, uint64_t max_ns)
+static pthread_once_t g_stalls_once = PTHREAD_ONCE_INIT;
+static bool g_trace_stalls;
+
+static void init_trace_stalls(void)
+{
+    const char *value = getenv("NC_TRACE_STALLS");
+    g_trace_stalls = value && !strcmp(value, "1");
+}
+
+bool nc_irq_trace_stalls(void)
+{
+    pthread_once(&g_stalls_once, init_trace_stalls);
+    return g_trace_stalls;
+}
+
+uint32_t nc_irq_idle_wait_trace(uint64_t deadline_ns, uint64_t max_ns, NcIrqIdleTrace *trace)
 {
     pthread_once(&g_once, init_cv);
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    const uint64_t now_ns = (uint64_t)now.tv_sec * 1000000000ull + (uint64_t)now.tv_nsec;
+    const uint64_t now_ns = mono_ns();
     uint64_t until = now_ns + max_ns;
     if (deadline_ns && deadline_ns < until) {
         until = deadline_ns;
@@ -440,12 +454,28 @@ uint32_t nc_irq_idle_wait(uint64_t deadline_ns, uint64_t max_ns)
     __atomic_store_n(&g_nc_idle_waiting, 1, __ATOMIC_RELAXED);
     __atomic_thread_fence(__ATOMIC_SEQ_CST);    /* against wake_idle's */
     pthread_mutex_lock(&g_mu);
+    int rc = 0;
     while (!nc_irq_lines() && !__atomic_load_n(&g_work, __ATOMIC_ACQUIRE)) {
-        if (pthread_cond_timedwait(&g_cv, &g_mu, &ts) != 0) {
+        rc = pthread_cond_timedwait(&g_cv, &g_mu, &ts);
+        if (rc != 0) {
             break;
         }
+    }
+    if (trace) {
+        trace->start_ns = now_ns;
+        trace->elapsed_ns = mono_ns() - now_ns;
+        trace->wait_result = rc;
+        trace->lines = nc_irq_lines();
+        trace->work = __atomic_load_n(&g_work, __ATOMIC_ACQUIRE);
+        trace->reason = trace->lines ? "irq" : trace->work ? "host-work" :
+            rc != ETIMEDOUT ? "wait-error" : deadline_ns == until ? "deadline" : "poll-limit";
     }
     pthread_mutex_unlock(&g_mu);
     __atomic_store_n(&g_nc_idle_waiting, 0, __ATOMIC_RELAXED);
     return nc_irq_lines();
+}
+
+uint32_t nc_irq_idle_wait(uint64_t deadline_ns, uint64_t max_ns)
+{
+    return nc_irq_idle_wait_trace(deadline_ns, max_ns, NULL);
 }

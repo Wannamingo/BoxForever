@@ -7,7 +7,7 @@ if(NOT EXISTS "${VULKAN_HEADERS}/include/vulkan/vulkan.h")
 endif()
 # Compile the production timeline.c against a small host/driver test double.
 # No Android runtime, GPU, FEX or emulator dependencies are needed.
-foreach(header base.h hle.h hitch.h mem/guestmem.h vk/back_int.h vk/guest_ram.h)
+foreach(header base.h hle.h hitch.h mem/guestmem.h vk/back_int.h vk/guest_ram.h vk/quirks.h)
   get_filename_component(dir "${CMAKE_BINARY_DIR}/stubs/hw/xbox/hle/${header}" DIRECTORY)
   file(MAKE_DIRECTORY "${dir}")
   file(WRITE "${CMAKE_BINARY_DIR}/stubs/hw/xbox/hle/${header}" "/* supplied by test_timeline.c */\n")
@@ -21,7 +21,9 @@ else()
   target_link_libraries(test_timeline PRIVATE pthread)
 endif()
 enable_testing()
-foreach(case ordered wrap pressure loss submit_failure reset_failure init_failure native)
+foreach(case ordered wrap pressure loss submit_failure reset_failure init_failure native native_poll
+             loss_readback_fence loss_readback_timeline idle_watcher loss_at_reset invalidate_failure
+             present_retry present_loss)
   add_test(NAME timeline_${case} COMMAND test_timeline ${case})
   set_tests_properties(timeline_${case} PROPERTIES TIMEOUT 15)
 endforeach()

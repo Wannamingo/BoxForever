@@ -57,6 +57,7 @@
 #define PCR_EXCEPTION_LIST 0x00
 #define PCR_STACK_BASE     0x04
 #define PCR_STACK_LIMIT    0x08
+#define PCR_IRQL           0x24
 #define PCR_CURRENT_THREAD 0x28
 
 /* FX_SAVE_AREA (nboxkrnl ki.hpp): FLOATING_SAVE_AREA (an FXSAVE image, 512
@@ -463,7 +464,20 @@ void nc_ps_schedule(NcKernel *k, NcFrame *f)
             return;
         }
         g_nc_sched.idles++;
-        nc_irq_idle_wait(deadline ? nc_ke_host_ns(deadline) : 0, 1000000000u);    /* on the host's clock */
+        const uint64_t host_deadline = deadline ? nc_ke_host_ns(deadline) : 0;
+        NcIrqIdleTrace trace;
+        const bool tracing = nc_irq_trace_stalls();
+        nc_irq_idle_wait_trace(host_deadline, 1000000000u, tracing ? &trace : NULL);
+        if (tracing && trace.elapsed_ns >= 100000000ull) {
+            const NcWait *wait = cur && cur->state == NC_T_WAITING ? &cur->wait : NULL;
+            const unsigned irql = k->kpcr_va ? *(const uint8_t *)nc_vm_host(k->vm, k->kpcr_va + PCR_IRQL) : 0;
+            nc_log("hakuX-stall", "vcpu tid=%d guest=%u start=%llu ns duration=%.1f ms wait=%08x objects=%u "
+                   "deadline=%llu ns irql=%u wake=%s wait_result=%d lines=%04x work=%u",
+                   gettid(), cur ? cur->id : 0, (unsigned long long)trace.start_ns, trace.elapsed_ns / 1e6,
+                   wait && wait->count ? wait->objects[0] : 0, wait ? wait->count : 0,
+                   (unsigned long long)host_deadline, irql, trace.reason, trace.wait_result, trace.lines,
+                   (unsigned)trace.work);
+        }
         nc_ke_update_time(k);
     }
     if (next == k->resume_first) {
