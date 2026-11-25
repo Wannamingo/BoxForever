@@ -69,11 +69,14 @@ internal object SettingsBackupFormat {
     var quoted = false; var escaped = false; var depth = 0
     for (c in text) {
       if (quoted) {
+        require(c >= ' ') { "Unescaped control character in settings file" }
         if (escaped) escaped = false else if (c == '\\') escaped = true else if (c == '"') quoted = false
       } else when (c) {
         '"' -> quoted = true
         '{', '[' -> { depth++; require(depth <= 24) }
         '}', ']' -> { depth--; require(depth >= 0) }
+        '\'', '/', '#', '\\' -> throw IllegalArgumentException("Invalid token in settings file")
+        else -> require(c >= ' ' || c == '\n' || c == '\r' || c == '\t')
       }
     }
     require(depth == 0 && !quoted)

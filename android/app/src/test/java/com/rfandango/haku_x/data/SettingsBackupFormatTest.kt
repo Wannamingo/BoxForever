@@ -104,6 +104,13 @@ class SettingsBackupFormatTest {
     assertThrows(IllegalArgumentException::class.java) { SettingsBackupFormat.decode("[".repeat(25) + "]".repeat(25)) }
   }
 
+  @Test fun platformJsonExtensionsCannotBypassThePreflightScan() {
+    val text = SettingsBackupFormat.encode(sample())
+    for (suffix in listOf(", /* comment */ \"extra\": 0", ", 'extra': 0", ", # comment\n\"extra\": 0", "\u0000")) {
+      assertThrows(IllegalArgumentException::class.java) { SettingsBackupFormat.decode(text.dropLast(1) + suffix + "}") }
+    }
+  }
+
   @Test fun readerAcceptsShortReadsAndRoundTripsUtf8() {
     val original = sample().copy(preferences = sample().preferences + ("x1box_prefs" to
       (sample().preferences.getValue("x1box_prefs") + ("network_lan_peers" to "сервер:3141"))))
