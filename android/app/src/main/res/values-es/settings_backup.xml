@@ -1,0 +1,16 @@
+<resources>
+  <string name="overlay_control_visibility">Mostrar/ocultar controles</string>
+  <string name="overlay_editor_zero_hint">Con opacidad 0%, el botón es invisible pero responde al tacto. El botón del ojo está desactivado de forma predeterminada.</string>
+  <string name="settings_backup_title">Copia de todos los ajustes</string>
+  <string name="settings_backup_description">Un archivo con posición, tamaño, visibilidad y opacidad de los botones; mandos y atajos; gráficos, sonido y shaders globales y por juego; HUD, idioma, tema y perfiles de rendimiento automático.</string>
+  <string name="settings_backup_export">Exportar todos los ajustes</string>
+  <string name="settings_backup_import">Importar todos los ajustes</string>
+  <string name="settings_backup_limits">Guarda el archivo en Descargas o en la tarjeta SD antes de desinstalar. Los juegos, partidas y controladores GPU se copian por separado. Tras reinstalar, selecciona de nuevo las carpetas de juegos. Los perfiles automáticos solo se usan si el dispositivo y la configuración del controlador coinciden.</string>
+  <string name="settings_backup_confirm">¿Restaurar los controles y todos los ajustes de este archivo? Juegos con ajustes propios: %1$d. Se reemplazarán los ajustes actuales.</string>
+  <string name="settings_backup_restore">Restaurar ajustes</string>
+  <string name="settings_backup_exported">Todos los ajustes exportados.</string>
+  <string name="settings_backup_restored">Ajustes restaurados.</string>
+  <string name="settings_backup_failed">No se pudo leer o guardar la copia. Usa un archivo de ajustes de BoxForever.</string>
+  <string name="settings_backup_working">Procesando ajustes…</string>
+  <string name="settings_backup_game_running">Cierra el juego antes de importar los ajustes.</string>
+</resources>

@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.io.File
 
 /** How a control is drawn and how it takes touches. */
-enum class ControlKind { FACE, GEM, PILL, STICK, DPAD, TRIGGER, CLICK, MENU, QUICK_STATE }
+enum class ControlKind { FACE, GEM, PILL, STICK, DPAD, TRIGGER, CLICK, MENU, QUICK_STATE, VISIBILITY }
 
 /** The on-screen controller's controls, laid out like the original Xbox controller (the "Duke"). */
 enum class ControlId(val kind: ControlKind, val label: String, val title: String) {
@@ -28,6 +28,7 @@ enum class ControlId(val kind: ControlKind, val label: String, val title: String
   MENU(ControlKind.MENU, "", "Menu"),
   QUICK_SAVE(ControlKind.QUICK_STATE, "QS", "Quick save"),
   QUICK_LOAD(ControlKind.QUICK_STATE, "QL", "Quick load"),
+  VISIBILITY(ControlKind.VISIBILITY, "", "Show/hide controls"),
 }
 
 /**
@@ -122,7 +123,7 @@ object OverlayStore {
     File(context.filesDir, FILE).delete()
   }
 
-  const val MIN_OPACITY = 0.1f
+  const val MIN_OPACITY = 0f
   fun minRadius(h: Float) = h * 0.025f
   fun maxRadius(h: Float) = h * 0.35f
 
@@ -166,6 +167,7 @@ object OverlayStore {
     put(ControlId.RIGHT_TRIGGER, w - h * 0.12f, h * 0.12f, h * 0.075f)
     put(ControlId.QUICK_SAVE, w / 2 - h * 0.105f, h * 0.61f, pill, visible = false)
     put(ControlId.QUICK_LOAD, w / 2 + h * 0.105f, h * 0.61f, pill, visible = false)
+    put(ControlId.VISIBILITY, w / 2, h * 0.13f, h * 0.05f, visible = false)
     return OverlayLayout(c)
   }
 }

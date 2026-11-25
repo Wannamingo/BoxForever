@@ -77,16 +77,18 @@ class SettingsProfileStore(private val context: Context) {
       .put("options", options).toString(), game)
   }
 
-  private fun valid(field: GameSetting, value: String): Boolean = when (field) {
-    GameSetting.UNCAPPED, GameSetting.ASYNC_SHADERS, GameSetting.PREBUILD_SHADERS, GameSetting.FXAA,
-    GameSetting.VIDEO_480P, GameSetting.VIDEO_720P, GameSetting.VIDEO_1080I, GameSetting.PAL60 -> value in listOf("true", "false")
-    GameSetting.FPS_LIMIT -> value.toIntOrNull()?.let { it in 0..240 } == true
-    GameSetting.RENDER_SCALE -> RenderScale.parse(value) != null
-    GameSetting.ASPECT -> value in listOf("auto", "4:3", "16:9", "stretch")
-    GameSetting.UPSCALE -> value in listOf("bilinear", "sgsr")
-    GameSetting.LANGUAGE -> value == AppPrefs.LANG_AUTO || value in AppPrefs.XBOX_LANGUAGES
-    GameSetting.SCREEN_FORMAT -> value in listOf("normal", "letterbox", "widescreen")
-    GameSetting.AV_PACK -> value in listOf("hdtv", "standard", "svideo")
-    else -> PictureControl.entries.first { it.setting == field }.let { c -> value.toIntOrNull()?.let { it in c.minimum..c.maximum } == true }
+  internal companion object {
+    fun valid(field: GameSetting, value: String): Boolean = when (field) {
+      GameSetting.UNCAPPED, GameSetting.ASYNC_SHADERS, GameSetting.PREBUILD_SHADERS, GameSetting.FXAA,
+      GameSetting.VIDEO_480P, GameSetting.VIDEO_720P, GameSetting.VIDEO_1080I, GameSetting.PAL60 -> value in listOf("true", "false")
+      GameSetting.FPS_LIMIT -> value.toIntOrNull()?.let { it in 0..240 } == true
+      GameSetting.RENDER_SCALE -> RenderScale.parse(value) != null
+      GameSetting.ASPECT -> value in listOf("auto", "4:3", "16:9", "stretch")
+      GameSetting.UPSCALE -> value in listOf("bilinear", "sgsr", "fsr")
+      GameSetting.LANGUAGE -> value == AppPrefs.LANG_AUTO || value in AppPrefs.XBOX_LANGUAGES
+      GameSetting.SCREEN_FORMAT -> value in listOf("normal", "letterbox", "widescreen")
+      GameSetting.AV_PACK -> value in listOf("hdtv", "standard", "svideo")
+      else -> PictureControl.entries.first { it.setting == field }.let { c -> value.toIntOrNull()?.let { it in c.minimum..c.maximum } == true }
+    }
   }
 }

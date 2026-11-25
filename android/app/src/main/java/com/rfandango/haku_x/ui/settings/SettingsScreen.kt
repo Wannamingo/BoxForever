@@ -150,6 +150,7 @@ fun SettingsScreen(
     if (category == SettingsCategory.DISPLAY) Hint(stringResource(R.string.game_restart_fps_hint))
     if (category == SettingsCategory.GRAPHICS) ExperienceSettingsSection(category, autoOnly = true)
     SettingsGroup(category == SettingsCategory.APP) {
+      SettingsBackupSection()
       Section(stringResource(R.string.ui_category_app))
       SettingsTarget(R.string.ui_app_language) {
         ListItem(

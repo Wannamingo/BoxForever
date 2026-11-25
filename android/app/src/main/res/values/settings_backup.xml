@@ -1,0 +1,16 @@
+<resources>
+  <string name="overlay_control_visibility">Show/hide controls</string>
+  <string name="overlay_editor_zero_hint">0% opacity makes a button invisible while keeping it touchable. The eye button is disabled by default.</string>
+  <string name="settings_backup_title">Back up all settings</string>
+  <string name="settings_backup_description">One file with button positions, sizes, visibility and opacity; controller mappings and shortcuts; global and per-game graphics, audio and shader settings; HUD, language, theme and automatic performance profiles.</string>
+  <string name="settings_backup_export">Export all settings</string>
+  <string name="settings_backup_import">Import all settings</string>
+  <string name="settings_backup_limits">Save the file in Downloads or on the SD card before uninstalling. Games, game saves and installed GPU drivers are backed up separately. After reinstalling, select your game folders again. Automatic performance profiles are used only if the device and driver configuration still match.</string>
+  <string name="settings_backup_confirm">Restore the button layout and all user settings from this file? Games with individual settings: %1$d. Current settings will be replaced.</string>
+  <string name="settings_backup_restore">Restore settings</string>
+  <string name="settings_backup_exported">All settings exported.</string>
+  <string name="settings_backup_restored">Settings restored.</string>
+  <string name="settings_backup_failed">Could not read or save this settings backup. Use a BoxForever settings backup file.</string>
+  <string name="settings_backup_working">Processing settings…</string>
+  <string name="settings_backup_game_running">Close the running game before importing settings.</string>
+</resources>

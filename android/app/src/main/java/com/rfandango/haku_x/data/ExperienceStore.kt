@@ -31,6 +31,21 @@ class ExperienceStore(context: Context) {
 
   private fun read(): JSONObject = runCatching { locked { readLocked() } }.getOrElse { JSONObject() }
 
+  internal fun backupText(): String? = locked {
+    if (!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists()) null else readLocked().toString()
+  }
+
+  internal fun restoreBackup(text: String?) = locked {
+    if (text == null) file.delete() else {
+      val bytes = text.toByteArray(Charsets.UTF_8)
+      val output = file.startWrite()
+      try {
+        output.write(bytes); file.finishWrite(output)
+        check(file.openRead().use { it.readBytes().contentEquals(bytes) })
+      } catch (e: Exception) { file.failWrite(output); throw e }
+    }
+  }
+
   private fun section(json: JSONObject, game: String?) =
     if (game == null) json.optJSONObject("global") else json.optJSONObject("games")?.optJSONObject(game)
 

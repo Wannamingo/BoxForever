@@ -1,0 +1,16 @@
+<resources>
+  <string name="overlay_control_visibility">Показать/скрыть кнопки</string>
+  <string name="overlay_editor_zero_hint">При прозрачности 0% кнопка невидима, но работает. Кнопка с глазом по умолчанию выключена.</string>
+  <string name="settings_backup_title">Резервная копия всех настроек</string>
+  <string name="settings_backup_description">Один файл с положением, размером, видимостью и прозрачностью кнопок, назначениями геймпадов и сочетаний, общими и игровыми настройками графики, звука и шейдеров, HUD, языком, темой и профилями автоподбора.</string>
+  <string name="settings_backup_export">Экспорт всех настроек</string>
+  <string name="settings_backup_import">Импорт всех настроек</string>
+  <string name="settings_backup_limits">Перед удалением приложения сохраните файл в «Загрузки» или на карту памяти. Игры, игровые сохранения и установленные GPU-драйверы копируются отдельно. После переустановки заново выберите папки с играми. Профили автоподбора применяются только при совпадении устройства и конфигурации драйвера.</string>
+  <string name="settings_backup_confirm">Восстановить раскладку кнопок и все пользовательские настройки из этого файла? Игр с отдельными настройками: %1$d. Текущие настройки будут заменены.</string>
+  <string name="settings_backup_restore">Восстановить настройки</string>
+  <string name="settings_backup_exported">Все настройки экспортированы.</string>
+  <string name="settings_backup_restored">Настройки восстановлены.</string>
+  <string name="settings_backup_failed">Не удалось прочитать или сохранить резервную копию настроек. Выберите файл настроек BoxForever.</string>
+  <string name="settings_backup_working">Обработка настроек…</string>
+  <string name="settings_backup_game_running">Перед импортом настроек закройте запущенную игру.</string>
+</resources>

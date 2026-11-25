@@ -35,6 +35,7 @@ internal val GlobalSettingsIndex = listOf(
   SettingsEntry(R.string.settings_prebuild_shaders, SettingsCategory.GRAPHICS, "cached shaders prebuild кэш шейдеров"),
   SettingsEntry(R.string.settings_gpu_driver_title, SettingsCategory.GRAPHICS, "mali malisx2 vulkan system turnip gpu driver драйвер"),
   SettingsEntry(R.string.ui_app_language, SettingsCategory.APP, "english russian language interface язык интерфейса русский английский"),
+  SettingsEntry(R.string.settings_backup_title, SettingsCategory.APP, "backup export import restore settings touch controls layout резервная копия экспорт импорт восстановить настройки раскладка кнопок"),
   SettingsEntry(R.string.settings_update_check, SettingsCategory.APP, "update github version apk обновление версия"),
   SettingsEntry(R.string.settings_export_logs, SettingsCategory.APP, "logs report diagnostics журнал отчет диагностика"),
 ) + ExperienceIndex

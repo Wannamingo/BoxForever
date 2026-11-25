@@ -66,6 +66,7 @@ class OnScreenController @JvmOverloads constructor(
   /** The jewel was tapped, or the swipe up from the lower screen. */
   var onMenuButtonTapped: (() -> Unit)? = null
   var onQuickStateTapped: ((ControlId) -> Unit)? = null
+  var onVisibilityToggleTapped: (() -> Unit)? = null
   /** Editing: the selected control changed (null: none). */
   var onSelectionChanged: ((ControlId?) -> Unit)? = null
   /** Editing: a size, visibility or the opacity changed. */
@@ -92,7 +93,7 @@ class OnScreenController @JvmOverloads constructor(
   private var menuPointer = -1
   private var menuPressed = false
 
-  /** Only the jewel shows (a gamepad is attached, or the user hid the controls). */
+  /** Only enabled utility controls remain when the user hides the game controls. */
   var minimal = false
     set(value) {
       if (field != value) {
@@ -111,7 +112,8 @@ class OnScreenController @JvmOverloads constructor(
     }
 
   /** Not drawn and not touchable while playing. */
-  private fun off(s: ControlSpec) = !s.visible || (minimal && (s.id != ControlId.MENU || jewelHidden))
+  private fun off(s: ControlSpec) = !s.visible || (minimal && s.id != ControlId.VISIBILITY &&
+    (s.id != ControlId.MENU || jewelHidden))
 
   private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
   private val swipeUp = SwipeUpGestureRecognizer(
@@ -196,7 +198,7 @@ class OnScreenController @JvmOverloads constructor(
       }
       // Each control at its own opacity; editing, a hidden one stays faint
       // where it is, so it can be selected and shown again.
-      val opacity = if (s.visible) s.opacity else 0.25f
+      val opacity = if (editing) max(0.25f, if (s.visible) s.opacity else 0f) else s.opacity
       if (cached) {
         drawCached(canvas, s, opacity)
         continue
@@ -247,6 +249,7 @@ class OnScreenController @JvmOverloads constructor(
     }
     ControlKind.DPAD -> Look(s.cx, s.cy, s.radius, dpadBits != 0, 0f, 0f, dpadBits)
     ControlKind.MENU -> Look(s.cx, s.cy, s.radius, menuPressed, 0f, 0f, 0)
+    ControlKind.VISIBILITY -> Look(s.cx, s.cy, s.radius, s.id in held, 0f, 0f, if (minimal) 1 else 0)
     else -> Look(s.cx, s.cy, s.radius, s.id in held, 0f, 0f, 0)
   }
 
@@ -290,6 +293,7 @@ class OnScreenController @JvmOverloads constructor(
       }
       ControlKind.DPAD -> painter.draw(canvas, s, dpadBits != 0, dpad = dpadBits)
       ControlKind.MENU -> painter.draw(canvas, s, menuPressed)
+      ControlKind.VISIBILITY -> painter.draw(canvas, s, s.id in held, controlsHidden = minimal)
       else -> painter.draw(canvas, s, s.id in held)
     }
   }
@@ -346,7 +350,8 @@ class OnScreenController @JvmOverloads constructor(
     editPaint.textAlign = Paint.Align.CENTER
     editPaint.color = Color.WHITE
     editPaint.setShadowLayer(3f * density, 0f, 1f * density, Color.BLACK)
-    val title = if (s.visible) s.id.title else "${s.id.title} (hidden)"
+    val name = if (s.id == ControlId.VISIBILITY) context.getString(R.string.overlay_control_visibility) else s.id.title
+    val title = if (s.visible) name else "$name (hidden)"
     val ty = if (box.top - 8f * density > 20f * density) box.top - 8f * density else box.bottom + 22f * density
     canvas.drawText(title, s.cx, ty, editPaint)
     editPaint.clearShadowLayer()
@@ -482,10 +487,10 @@ class OnScreenController @JvmOverloads constructor(
     }
     // Sliding off a button releases it; onto another free one presses that (A to B and so on).
     release(id)
-    if (id.kind == ControlKind.QUICK_STATE) return
+    if (id.kind == ControlKind.QUICK_STATE || id.kind == ControlKind.VISIBILITY) return
     val next = hit(x, y) ?: return
     if (next.kind != ControlKind.STICK && next.kind != ControlKind.DPAD && next.kind != ControlKind.MENU &&
-      next.kind != ControlKind.QUICK_STATE && next !in held
+      next.kind != ControlKind.QUICK_STATE && next.kind != ControlKind.VISIBILITY && next !in held
     ) {
       press(next, pointer)
     }
@@ -512,6 +517,9 @@ class OnScreenController @JvmOverloads constructor(
     release(control)
     if (control.kind == ControlKind.QUICK_STATE && hit(x, y) == control) {
       onQuickStateTapped?.invoke(control)
+    }
+    if (control.kind == ControlKind.VISIBILITY && hit(x, y) == control) {
+      onVisibilityToggleTapped?.invoke()
     }
   }
 

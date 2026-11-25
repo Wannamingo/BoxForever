@@ -63,8 +63,8 @@ class OverlayEditorBar(context: Context, private val controller: OnScreenControl
     }
     slider(sizeSlider) { controller.setScalePercent(sizeRange.first + it) }
     bar.addView(opacityTitle)
-    opacitySlider.max = 90
-    slider(opacitySlider) { controller.setOpacityPercent(10 + it) }
+    opacitySlider.max = 100
+    slider(opacitySlider) { controller.setOpacityPercent(it) }
     row().apply {
       addView(action(R.string.overlay_editor_reset) { controller.resetLayout() }, weighted())
       addView(action(R.string.overlay_editor_cancel) { controller.reloadLayout(); onFinished() }, weighted())
@@ -74,7 +74,8 @@ class OverlayEditorBar(context: Context, private val controller: OnScreenControl
       }, weighted())
     }
     bar.addView(label().apply {
-      setText(R.string.overlay_editor_workflow); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+      text = context.getString(R.string.overlay_editor_workflow) + " " + context.getString(R.string.overlay_editor_zero_hint)
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
       setTextColor(0xFFCCCCCC.toInt()); setPadding(0, dp(4), 0, dp(2))
     })
     tab.background = GradientDrawable().apply {
@@ -113,7 +114,7 @@ class OverlayEditorBar(context: Context, private val controller: OnScreenControl
     val opacity = controller.opacityPercent()
     opacityTitle.text = if (opacity == null) context.getString(R.string.overlay_editor_opacity_mixed)
       else context.getString(R.string.overlay_editor_opacity, opacity)
-    opacitySlider.progress = (opacity ?: 50).coerceIn(10, 100) - 10
+    opacitySlider.progress = (opacity ?: 50).coerceIn(0, 100)
     resetOne.isEnabled = selected != null
     resetOne.alpha = if (resetOne.isEnabled) 1f else .35f
     visibility.isEnabled = selected != null && selected != ControlId.MENU
@@ -133,6 +134,7 @@ class OverlayEditorBar(context: Context, private val controller: OnScreenControl
     ControlId.MENU -> context.getString(R.string.overlay_control_menu)
     ControlId.QUICK_SAVE -> context.getString(R.string.exp_key_save)
     ControlId.QUICK_LOAD -> context.getString(R.string.exp_key_load)
+    ControlId.VISIBILITY -> context.getString(R.string.overlay_control_visibility)
     ControlId.WHITE -> context.getString(R.string.overlay_control_white)
     ControlId.BLACK -> context.getString(R.string.overlay_control_black)
     else -> id.label

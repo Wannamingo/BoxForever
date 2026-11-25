@@ -44,7 +44,8 @@ class ControlPainter {
    * One control. pressed: held; kx, ky: a stick's deflection (-1..1);
    * dpad: the D-pad's held directions (DPAD_* bits).
    */
-  fun draw(c: Canvas, s: ControlSpec, pressed: Boolean, kx: Float = 0f, ky: Float = 0f, dpad: Int = 0) {
+  fun draw(c: Canvas, s: ControlSpec, pressed: Boolean, kx: Float = 0f, ky: Float = 0f, dpad: Int = 0,
+    controlsHidden: Boolean = false) {
     when (s.id.kind) {
       ControlKind.FACE -> face(c, s, pressed)
       ControlKind.GEM -> gem(c, s, pressed)
@@ -54,7 +55,28 @@ class ControlPainter {
       ControlKind.TRIGGER -> trigger(c, s, pressed)
       ControlKind.CLICK -> click(c, s, pressed)
       ControlKind.MENU -> menu(c, s, pressed)
+      ControlKind.VISIBILITY -> visibility(c, s, pressed, controlsHidden)
     }
+  }
+
+  private fun visibility(c: Canvas, s: ControlSpec, pressed: Boolean, hidden: Boolean) {
+    val r = s.radius * if (pressed) .94f else 1f
+    socket(c, s.cx, s.cy, r)
+    c.save()
+    c.translate(s.cx, s.cy)
+    p.shader = null
+    p.style = Paint.Style.STROKE
+    p.strokeWidth = r * .09f
+    p.strokeCap = Paint.Cap.ROUND
+    p.color = 0xFFE5F5E5.toInt()
+    path.reset()
+    path.moveTo(-r * .72f, 0f)
+    path.cubicTo(-r * .35f, -r * .58f, r * .35f, -r * .58f, r * .72f, 0f)
+    path.cubicTo(r * .35f, r * .58f, -r * .35f, r * .58f, -r * .72f, 0f)
+    c.drawPath(path, p)
+    c.drawCircle(0f, 0f, r * .23f, p)
+    if (!hidden) c.drawLine(-r * .65f, -r * .65f, r * .65f, r * .65f, p)
+    c.restore()
   }
 
   /*
@@ -391,6 +413,7 @@ class ControlPainter {
       ControlKind.TRIGGER -> 1.3f
       ControlKind.CLICK -> 1.3f
       ControlKind.MENU -> 1.2f
+      ControlKind.VISIBILITY -> 1.2f
     }
   }
 }

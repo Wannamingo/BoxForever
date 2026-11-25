@@ -1,0 +1,16 @@
+<resources>
+  <string name="overlay_control_visibility">Mostrar/ocultar controles</string>
+  <string name="overlay_editor_zero_hint">Com opacidade 0%, o botão fica invisível, mas responde ao toque. O botão do olho vem desativado.</string>
+  <string name="settings_backup_title">Backup de todas as configurações</string>
+  <string name="settings_backup_description">Um arquivo com posição, tamanho, visibilidade e opacidade dos botões; controles e atalhos; gráficos, áudio e shaders globais e por jogo; HUD, idioma, tema e perfis de desempenho automático.</string>
+  <string name="settings_backup_export">Exportar todas as configurações</string>
+  <string name="settings_backup_import">Importar todas as configurações</string>
+  <string name="settings_backup_limits">Salve o arquivo em Downloads ou no cartão SD antes de desinstalar. Jogos, saves e drivers de GPU são copiados separadamente. Após reinstalar, selecione novamente as pastas dos jogos. Perfis automáticos só são usados se o dispositivo e a configuração do driver forem os mesmos.</string>
+  <string name="settings_backup_confirm">Restaurar os botões e todas as configurações deste arquivo? Jogos com ajustes próprios: %1$d. As configurações atuais serão substituídas.</string>
+  <string name="settings_backup_restore">Restaurar configurações</string>
+  <string name="settings_backup_exported">Todas as configurações foram exportadas.</string>
+  <string name="settings_backup_restored">Configurações restauradas.</string>
+  <string name="settings_backup_failed">Não foi possível ler ou salvar o backup. Use um arquivo de configurações do BoxForever.</string>
+  <string name="settings_backup_working">Processando configurações…</string>
+  <string name="settings_backup_game_running">Feche o jogo antes de importar configurações.</string>
+</resources>

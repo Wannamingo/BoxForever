@@ -64,7 +64,6 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
   }
   private var discArg = ""
   private var onScreenController: OnScreenController? = null
-  private var controlsVisibilityButton: ControlsVisibilityButton? = null
   private var fpsView: TextView? = null
   private var hitchView: TextView? = null
   /* the settings' overlays, read as the game comes back (onResume) */
@@ -840,6 +839,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     overlay.setControllerListener(OverlayBridge())
     overlay.onMenuButtonTapped = { showMenu() }
+    overlay.onVisibilityToggleTapped = ::toggleControls
     overlay.onQuickStateTapped = { control ->
       when (control) {
         com.rfandango.haku_x.overlay.ControlId.QUICK_SAVE -> runHotkey(com.rfandango.haku_x.data.HotkeyAction.QUICK_SAVE)
@@ -851,32 +851,19 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     mLayout?.addView(overlay)
     overlayPacer.attach(overlay)
     onScreenController = overlay
-    val button = ControlsVisibilityButton(this, ::toggleControls)
-    val density = resources.displayMetrics.density
-    val size = (48 * density).toInt()
-    mLayout?.addView(button, RelativeLayout.LayoutParams(size, size).apply {
-      addRule(RelativeLayout.ALIGN_PARENT_TOP)
-      addRule(RelativeLayout.CENTER_HORIZONTAL)
-      topMargin = (32 * density).toInt() // Below the HUD, away from both trigger buttons.
-    })
-    controlsVisibilityButton = button
     updateControllerVisibility()
   }
 
   /**
    * Start with the controls shown when no gamepad is attached. An explicit
-   * choice lasts for the session. The separate visibility button stays
-   * available when every control, including the menu jewel, is hidden.
+   * choice lasts for the session. The optional, editable visibility button
+   * stays available when every other control is hidden.
    */
   private fun updateControllerVisibility() {
     onScreenController?.visibility = if (calibration.trial) View.GONE else View.VISIBLE
     val shown = controlsShown ?: !hasGamepad()
     onScreenController?.minimal = !shown
     onScreenController?.jewelHidden = !shown
-    controlsVisibilityButton?.apply {
-      visibility = if (calibration.trial || editorBar != null) View.GONE else View.VISIBLE
-      setControlsShown(shown)
-    }
   }
 
   private fun toggleControls() {
@@ -1062,7 +1049,6 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     mLayout?.addView(bar, params)
     editorBar = bar
-    controlsVisibilityButton?.visibility = View.GONE
     syncPause()
   }
 
