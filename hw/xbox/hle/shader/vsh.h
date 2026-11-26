@@ -37,6 +37,9 @@ typedef struct HleVshKey {
                                    padding, the key's size is the pipeline record's) */
 } HleVshKey;
 
+/* Direct screen-space X/Y binding, or -1 when it cannot be proven. */
+int hle_vsh_screen_input(const uint32_t *tokens, unsigned nslots);
+
 /* Parses nslots 4-dword instructions (stopping at the FINAL one) and writes
  * the GLSL into buf. Returns the length, or 0 when a slot does not decode,
  * no instruction is FINAL, or the text does not fit. */

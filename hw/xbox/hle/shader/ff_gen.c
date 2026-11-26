@@ -155,8 +155,11 @@ size_t hle_ff_vs_glsl(const HleFfVsKey *k, char *buf, size_t cap)
                 "  vec2 scr = iPos.xy * pc.scr.xy + pc.scr.zw;\n"
                 HLE_SUBPIXEL_GLSL("scr")
                 HLE_TEXEL_EDGE_GLSL("scr")
-                "  vec2 ndc = scr * pc.vp + vec2(-1.0, 1.0);\n"
-                "  gl_Position = vec4(ndc * w, iPos.z * w, w);\n"
+                "  vec2 ndc = scr * pc.vp + vec2(-1.0, 1.0);\n");
+        if (g_hle_horplus) {
+            put(&b, HLE_HUD_ANCHOR_GLSL);
+        }
+        put(&b, "  gl_Position = vec4(ndc * w, iPos.z * w, w);\n"
                 "  vec3 ePos = vec3(0.0), eN = vec3(0.0, 0.0, -1.0);\n");
     } else if (!xf) {
         put(&b, "  gl_Position = pc.mvp * vec4(iPos.xyz, 1.0);\n"

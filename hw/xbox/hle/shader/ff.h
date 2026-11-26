@@ -303,6 +303,10 @@ static inline const char *hle_push_glsl(void)
  * proportions when displayed in 16:9. Push-block bit 14 is free. */
 extern bool g_hle_horplus;
 #define HLE_HORPLUS_FLAG 16384u
+/* Screen-space HUD: 4:3 width at the left, centre, or right anchor. */
+#define HLE_HUD_ANCHOR_FLAG 32768u
+#define HLE_HUD_ANCHOR_GLSL \
+    "  if ((pc.flags & 32768u) != 0u) ndc.x = ndc.x * 0.75 + pc.mvp[0][0];\n"
 #define HLE_SUBPIXEL_GLSL(v) \
     "  " v " = (pc.flags & 8192u) != 0u ? trunc(" v " * 16.0) / 16.0 : " v " - 0.03125;\n"
 

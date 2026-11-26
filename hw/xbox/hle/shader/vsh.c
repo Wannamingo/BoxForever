@@ -277,6 +277,57 @@ typedef struct ProjectionTrace {
     int next_origin;
 } ProjectionTrace;
 
+/* The X/Y components of a pass-through program come straight from the same
+ * input binding. Follow MOV aliases and invalidate on any other write. */
+int hle_vsh_screen_input(const uint32_t *tokens, unsigned nslots)
+{
+    int source[13][2] = { 0 };
+    for (unsigned s = 0; s < nslots && s < HLE_VSH_MAX_SLOTS; s++) {
+        Nv2aVshStep step = { 0 };
+        if (nv2a_vsh_parse_step(&step, tokens + 4 * s) != NV2AVPR_SUCCESS) {
+            return -1;
+        }
+        const Nv2aVshOperation *ops[] = { &step.mac, &step.ilu };
+        int next[2][2] = { 0 };
+        for (unsigned i = 0; i < 2; i++) {
+            const Nv2aVshInput *in = &ops[i]->inputs[0];
+            if (ops[i]->opcode != NV2AOP_MOV || in->is_negated) {
+                continue;
+            }
+            for (unsigned j = 0; j < 2; j++) {
+                const unsigned lane = in->swizzle[j];
+                if (in->type == NV2ART_INPUT && in->index < 16) {
+                    next[i][j] = 1 + (int)(in->index * 4 + lane);
+                } else if (in->type == NV2ART_TEMPORARY && in->index <= 12 && lane < 2) {
+                    next[i][j] = source[in->index][lane];
+                }
+            }
+        }
+        for (unsigned i = 0; i < 2; i++) {
+            if (ops[i]->opcode == NV2AOP_NOP) {
+                continue;
+            }
+            for (unsigned j = 0; j < 2; j++) {
+                const Nv2aVshOutput *out = &ops[i]->outputs[j];
+                const unsigned reg = out->type == NV2ART_TEMPORARY ? out->index :
+                    out->type == NV2ART_OUTPUT && out->index == 0 ? 12 : 13;
+                if (reg <= 12) {
+                    for (unsigned lane = 0; lane < 2; lane++) {
+                        if (out->writemask & (8u >> lane)) {
+                            source[reg][lane] = next[i][lane];
+                        }
+                    }
+                }
+            }
+        }
+        if (step.is_final) {
+            int x = source[12][0] - 1;
+            return x >= 0 && x % 4 == 0 && source[12][1] == x + 2 ? x / 4 : -1;
+        }
+    }
+    return -1;
+}
+
 static bool varying(ProjectionValue value)
 {
     return value.kind == PROJ_VERTEX || value.kind == PROJ_DOT;
@@ -585,6 +636,9 @@ static void tail(Buf *bp, const HleVshKey *k, bool fogw, const char *perspective
     }
     if (g_hle_horplus && !k->zfree && perspective) {
         put(&b, "  if ((pc.flags & %uu) != 0u && (%s)) ndc.x *= 0.75;\n", HLE_HORPLUS_FLAG, perspective);
+    }
+    if (g_hle_horplus) {
+        put(&b, HLE_HUD_ANCHOR_GLSL);
     }
     put(&b, "  gl_Position = vec4(ndc * w, %s, w);\n", k->wbuf || k->zfree ? "0.0" : "zN * w");
     if (k->zclamp && g_hle_glsl_zclamp) {

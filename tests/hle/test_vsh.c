@@ -143,7 +143,11 @@ static void test_horplus_projection(void)
     dump("vsh_horplus_camera");
     HT_CHECK(hle_vsh_glsl(&hud[0][0], 2, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
+    HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 2), 0);
+    HT_CHECK(strstr(buf, "ndc.x = ndc.x * 0.75 + pc.mvp[0][0]") != NULL);
     dump("vsh_horplus_hud");
+    HT_EQ_INT(hle_vsh_screen_input(&camera[0][0], 3), -1);
+    HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 1), -1);
 
     /* X/Y still use R1.x, but a swizzle change makes it the reciprocal of
      * screen Z, so it cannot be used to prove division by output W. */
