@@ -61,7 +61,7 @@ class DriverPackageArchiveTest {
   }
   @Test fun allBundledLibrariesPassArchiveAndArm64Checks() {
     val assets=File("src/main/assets/gpu_drivers").listFiles()!!.filter{it.extension=="zip"}
-    assertEquals(7,assets.size)
+    assertEquals(8,assets.size)
     for (file in assets) {
       val library = ZipFile(file).use { archive ->
         archive.entries().asSequence().single { !it.isDirectory && it.name.endsWith(".so") }.name

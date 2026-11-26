@@ -8,6 +8,15 @@ An independent Android emulator for original Xbox games based on hakuX. Supports
 
 **[Latest APK and checksums](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[Release history](https://github.com/Wannamingo/BoxForever/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
 
+## What's new in BoxForever 1.0.5
+
+- Fixed rectangular shadow artifacts in Conker and added Unified 0.5.1 G52 Border Lab to the driver list.
+- Added experimental Hor+ and 3:2, 16:10 and 21:9 display ratios.
+- Shortened blocking presentation waits and added Vulkan diagnostics.
+
+[BoxForever 1.0.5 release notes](releases/1.0.5.en.md).
+
+
 ## What's new in BoxForever 1.0.4
 
 - Spanish and Brazilian Portuguese are available under **Settings → Application → Interface language**.

@@ -202,9 +202,9 @@ static HlePendingPresent pending;
 static unsigned waits, presents;
 static VkResult next_present_result;
 static VkResult mock_present_wait(uint64_t value, uint64_t timeout) {
-    assert(value == 12 && timeout == (waits ? 5000000ull : 1000000000ull));
+    assert(value == 12 && timeout == HLE_PRESENT_REFRESH_WAIT_NS);
     waits++;
-    return waits == 1 ? VK_TIMEOUT : next_present_result;
+    return waits <= 2 ? VK_TIMEOUT : next_present_result;
 }
 static void mock_present(bool cpu, uint64_t key, uint32_t shader_gen, bool fallback) {
     assert(cpu && key == 98 && shader_gen == 4 && fallback && !pending.value);
@@ -213,12 +213,18 @@ static void mock_present(bool cpu, uint64_t key, uint32_t shader_gen, bool fallb
 static void test_present_retry(VkResult result) {
     next_present_result = result;
     pending = (HlePendingPresent){12, 98, 4, true};
-    assert(hle_present_wait_pending(&pending, 1000000000ull, mock_present_wait, mock_present) == VK_TIMEOUT);
-    assert(pending.value == 12 && !presents);
-    assert(hle_present_wait_pending(&pending, 5000000ull, mock_present_wait, mock_present) == result);
+    assert(HLE_PRESENT_REFRESH_WAIT_NS <= 2000000ull);
+    for (unsigned attempt = 0; attempt < 2; ++attempt) {
+        assert(hle_present_wait_pending(&pending, HLE_PRESENT_REFRESH_WAIT_NS,
+                                        mock_present_wait, mock_present) == VK_TIMEOUT);
+        assert(pending.value == 12 && !presents);
+    }
+    assert(hle_present_wait_pending(&pending, HLE_PRESENT_REFRESH_WAIT_NS,
+                                    mock_present_wait, mock_present) == result);
     assert(!pending.value && presents == (unsigned)(result == VK_SUCCESS));
-    assert(hle_present_wait_pending(&pending, 5000000ull, mock_present_wait, mock_present) == VK_NOT_READY);
-    assert(waits == 2);
+    assert(hle_present_wait_pending(&pending, HLE_PRESENT_REFRESH_WAIT_NS,
+                                    mock_present_wait, mock_present) == VK_NOT_READY);
+    assert(waits == 3);
 }
 
 int main(int argc, char **argv) {

@@ -1,5 +1,14 @@
 # Changelog
 
+## BoxForever 1.0.5 — 2026-11-26
+
+- Preserve white borders when rendering Conker's RGB565 shadow textures without formatless custom Vulkan border colors.
+- Bundle Unified 0.5.1 G52 Border Lab as a selectable driver.
+- Add experimental Hor+ and 3:2, 16:10 and 21:9 display ratios with HUD corrections.
+- Shorten blocking waits in the Vulkan presentation thread and retain pending frames across retries.
+- [Русский](releases/1.0.5.ru.md) · [English](releases/1.0.5.en.md)
+
+
 ## BoxForever 1.0.4 — 2026-11-25
 
 - Added Spanish and Brazilian Portuguese interface translations. Select either language under Settings → Application → Interface language.

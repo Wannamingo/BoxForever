@@ -282,6 +282,9 @@ bool nc_present_frame(struct ANativeWindow *win)
     apply_framing();
     movie_layout();
     count_frames();
+    if (!hle_present_flush_pending()) {
+        return false;
+    }
     debug_poll();
     const bool fxaa = g_dbg.fxaa < 0 ? g_fxaa : g_dbg.fxaa != 0;
     const int upscale = g_dbg.upscale < 0 ? g_upscale : g_dbg.upscale;

@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <vulkan/vulkan_core.h>
 
+/* Completion waits share the window thread with input and lifecycle events. */
+#define HLE_PRESENT_REFRESH_WAIT_NS 2000000ull
+
 typedef struct HlePendingPresent {
     uint64_t value, key;
     uint32_t shader_gen;

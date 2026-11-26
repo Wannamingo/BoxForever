@@ -49,9 +49,13 @@ object GpuDriverHelper {
   private const val UNIFIED_0453_SHA256 = "afe335c6b948115d64fc7cf4c8b1d8280adb348bd1e6d2a06a5e8d0ce19ecfda"
   private const val UNIFIED_0453_MARKER = "bundled:unified:0.4.53:e4627c2637e5"
   private const val UNIFIED_0464_FILE = "hakux-bundled-unified-0.4.64-api31.zip"
+  private const val UNIFIED_051_FILE = "hakux-bundled-unified-0.5.1-api31.zip"
   private const val UNIFIED_0464_ASSET = "gpu_drivers/Unified-0.4.64-AFBC-Android-API31.zip"
+  private const val UNIFIED_051_ASSET = "gpu_drivers/Unified-0.5.1-G52-Border-Lab.zip"
   private const val UNIFIED_0464_SHA256 = "bdc0c390c83005216cbff9bf9096146d7ba62cd239481867207d61cb46a1ccc0"
+  private const val UNIFIED_051_SHA256 = "6bea07de12cf0ee325987525461d692a5cb738d322a69c7fcc906e4557a3ae35"
   private const val UNIFIED_0464_MARKER = "bundled:unified:0.4.64:c21803796bdb"
+  private const val UNIFIED_051_MARKER = "bundled:unified:0.5.1:c4d156249788"
   private const val BOOTSTRAPPED = "bundled_malisx2_bootstrapped"
   private var bundledPrepared = false
 
@@ -76,9 +80,10 @@ object GpuDriverHelper {
   private val unified0450File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0450_FILE")
   private val unified0453File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0453_FILE")
   private val unified0464File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0464_FILE")
+  private val unified051File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_051_FILE")
   // Every asset is visible on every device. Detection only chooses the historical default.
   private val bundledFiles: List<File> get() =
-    listOf(combinedFile, bundledFile, unifiedFile, releaseUnifiedFile, unified0450File, unified0453File, unified0464File)
+    listOf(combinedFile, bundledFile, unifiedFile, releaseUnifiedFile, unified0450File, unified0453File, unified0464File, unified051File)
   private val automaticCandidates: List<File> get() =
     if (rg477mMali) listOf(combinedFile, bundledFile, unifiedFile) else listOf(bundledFile)
   private val choices get() = appContext.getSharedPreferences("gpu_driver_choices", Context.MODE_PRIVATE)
@@ -92,6 +97,7 @@ object GpuDriverHelper {
       BundledDriverArchive.ensure(unified0450File, UNIFIED_0450_SHA256) { appContext.assets.open(UNIFIED_0450_ASSET) }
       BundledDriverArchive.ensure(unified0453File, UNIFIED_0453_SHA256) { appContext.assets.open(UNIFIED_0453_ASSET) }
       BundledDriverArchive.ensure(unified0464File, UNIFIED_0464_SHA256) { appContext.assets.open(UNIFIED_0464_ASSET) }
+      BundledDriverArchive.ensure(unified051File, UNIFIED_051_SHA256) { appContext.assets.open(UNIFIED_051_ASSET) }
       val bundled = automaticCandidates.firstOrNull {
         readMetadata(it)?.let(::canLoadDriver) == true
       }
@@ -128,6 +134,7 @@ object GpuDriverHelper {
     unified0450File.absolutePath -> UNIFIED_0450_MARKER
     unified0453File.absolutePath -> UNIFIED_0453_MARKER
     unified0464File.absolutePath -> UNIFIED_0464_MARKER
+    unified051File.absolutePath -> UNIFIED_051_MARKER
     else -> file.name
   }
   fun isBundledInUse(): Boolean = bundledFiles.any(::isInUse)

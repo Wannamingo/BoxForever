@@ -26,6 +26,9 @@ int hle_present_shader_status(void);
 void hle_present_set_picture(int brightness, int contrast, int saturation, int gamma, int sharpness);
 void hle_present_set_framing(int left, int right, int top, int bottom, int zoom, int shift_x, int shift_y);
 
+/* Retire a previously submitted frame before considering another one. */
+bool hle_present_flush_pending(void);
+
 /* This refresh would put up what win already shows (the same front frame,
  * gamma ramp, window and swapchain, and key: the caller's placement and
  * filters, as at the last present that went through): the caller may skip
