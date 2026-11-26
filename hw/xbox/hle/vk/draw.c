@@ -1597,15 +1597,24 @@ static VkSamplerAddressMode addr_mode(uint32_t a)
 
 /* sampler_index's lod_down: how many levels finer the stage must sample (the
  * source surface's resolution scale over the target's, as log2 in 1/16ths). */
-static uint32_t sampler_index(const uint32_t *tss, uint32_t lod_down, unsigned anisotropy)
+static uint32_t sampler_index(const uint32_t *tss, uint32_t lod_down, unsigned anisotropy,
+                              VkFormat format)
 {
+    uint32_t bc = tss[TSS_BORDERCOLOR];
+    /* The standard white border exactly represents white RGB565: Vulkan
+     * only replaces RGB in that format. Keep the guest alpha for RGBA views.
+     * Key the cache on the effective color so both formats can use one TSS. */
+    if (!g_hvk.caps.cbc_any && format == VK_FORMAT_R5G6B5_UNORM_PACK16 &&
+        bc == 0x00ffffffu) {
+        bc = 0xffffffffu;
+    }
     uint32_t base = MIN(tss[TSS_MAXMIPLEVEL], 15u);
     uint64_t key = (uint64_t)(tss[TSS_ADDRESSU] & 7) | (uint64_t)(tss[TSS_ADDRESSV] & 7) << 3 |
                    (uint64_t)(tss[TSS_MAGFILTER] & 7) << 6 |
                    (uint64_t)(tss[TSS_MINFILTER] & 7) << 9 |
                    (uint64_t)(tss[TSS_MIPFILTER] & 7) << 12 |
                    (uint64_t)(tss[TSS_ADDRESSW] & 7) << 15 | (uint64_t)base << 18 |
-                   (uint64_t)tss[TSS_BORDERCOLOR] << 32;
+                   (uint64_t)bc << 32;
     uint64_t key2 = hle_filter_key2(tss[TSS_MIPMAPLODBIAS], lod_down, anisotropy);
     /* one per stage a draw: the index last found for the key's hash, before the scan */
     static uint16_t hot[64];
@@ -1623,7 +1632,6 @@ static uint32_t sampler_index(const uint32_t *tss, uint32_t lod_down, unsigned a
     if (g_dr.nsmp >= HLE_MAX_SAMPLERS) {
         return 0;
     }
-    uint32_t bc = tss[TSS_BORDERCOLOR];
     VkSamplerCustomBorderColorCreateInfoEXT cbc = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
         .customBorderColor.float32 = { ((bc >> 16) & 0xFF) / 255.0f, ((bc >> 8) & 0xFF) / 255.0f,
@@ -2452,7 +2460,8 @@ bool hle_draw_movie_texture(const HleCmdDraw *c)
 static uint8_t g_rt_seen[8192 / 8];
 static unsigned g_rt_told;
 
-/* Image slot of the texture bound to stage st (0 = the white texture);
+/* Image slot of the texture bound to stage st (0 = the white texture).
+ * *format gets the bound image format for sampler border selection.
  * *flags gets the stage's linear (texel coordinate) bit. A target's image
  * is addressed as the stage's format says, as the NV2A does, not as the
  * target is laid out: a linear and a swizzled target over the same memory
@@ -2460,22 +2469,27 @@ static unsigned g_rt_told;
  * a swizzled 256 x 256 target through its linear view and blurs it from
  * there with a linear texture, by texel; addressed normalized, as the
  * swizzled object, every tap clamped to the corner and the halo was gone. */
-static uint32_t stage_slot(const HleCmdDraw *c, unsigned st, uint32_t rt_id, uint32_t *flags)
+static uint32_t stage_slot(const HleCmdDraw *c, unsigned st, uint32_t rt_id, uint32_t *flags,
+                           VkFormat *format)
 {
     HleVkTex *tx = tex_find(c->tex[st]);
     HleVkSurf *ts = tx ? NULL : tex_surface(c->tex[st], rt_id);
     uint32_t slot = 0;
     HleVkSurf *rt;
+    *format = VK_FORMAT_UNDEFINED;
     if (tx) {
         slot = tx->slot;
+        *format = tx->fmt;
         *flags |= tx->linear ? 1u << st : 0;
     } else if (c->tex[st] == rt_id && g_snap_cur >= 0 && g_snap_rt == rt_id &&
                (rt = hle_surf_get(rt_id)) != NULL) {
         slot = g_snap[g_snap_cur].slot;  /* the target, copied before the draw */
+        *format = rt->fmt;
         *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (rt->scale > HLE_SCALE_NATIVE ? 256u << st : 0) : 0;
         return slot;
     } else if (ts && (ts->general || ts->layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)) {
         slot = surf_slot(ts, c->tex_ord >> 2 * st & 3);  /* RT as texture (identity) */
+        *format = ts->fmt;
         /* linear format: texel coords, of a scaled image */
         *flags |= (c->tex_lin >> st & 1) ? (1u << st) | (ts->scale > HLE_SCALE_NATIVE ? 256u << st : 0) : 0;
     }
@@ -3479,13 +3493,15 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
         fs->alphaarg2 = t[TSS_ALPHAARG2];
         fs->resultarg = t[TSS_RESULTARG];
         uint32_t lin = 0;
+        VkFormat format = VK_FORMAT_UNDEFINED;
         /* fixed-function shadow buffers: not yet (white, as before) */
-        uint32_t slot = shadow_fmt(c->tex[st]) ? 0 : stage_slot(c, st, rt_id, &lin);
+        uint32_t slot = shadow_fmt(c->tex[st]) ? 0 : stage_slot(c, st, rt_id, &lin, &format);
         pc.flags |= (lin >> st & 1) << ki | (lin >> (st + 8) & 1) << (ki + 8);
         fs->texture = c->tex[st] != 0;
         fs->unset = c->tex_unset >> st & 1;
         fs->alpha_kill = fs->texture && t[TSS_ALPHAKILL] != 0;
-        pc.tex[ki] = slot | sampler_index(t, stage_lod_down(c, st, rt_id), stage_anisotropy(c, st)) << 16;
+        pc.tex[ki] = slot | sampler_index(t, stage_lod_down(c, st, rt_id),
+                                         stage_anisotropy(c, st), format) << 16;
         k.vs.texcoord[ki] = t[TSS_TEXCOORDINDEX] & 7;
         k.ps.nstages = ki + 1;
         k.vs.ntex = ki + 1;
@@ -3497,8 +3513,10 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
         memset(&k.ps, 0, sizeof(k.ps));
         pc.flags = 0;
         for (unsigned st = 0; st < HLE_FF_STAGES; st++) {
-            pc.tex[st] = stage_slot(c, st, rt_id, &pc.flags) |
-                         sampler_index(s->tss[st], stage_lod_down(c, st, rt_id), stage_anisotropy(c, st)) << 16;
+            VkFormat format;
+            uint32_t slot = stage_slot(c, st, rt_id, &pc.flags, &format);
+            pc.tex[st] = slot | sampler_index(s->tss[st], stage_lod_down(c, st, rt_id),
+                                             stage_anisotropy(c, st), format) << 16;
             k.vs.texcoord[st] = s->tss[st][TSS_TEXCOORDINDEX] & 7;
         }
         k.vs.ntex = HLE_FF_STAGES;
