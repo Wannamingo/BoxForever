@@ -133,10 +133,10 @@ static void test_horplus_projection(void)
         { 0, 0x002760ff, 0x0c000000, 0x00001800 }, /* MOV oPos.w, c[59].w (may be non-unit) */
         { 0, 0x0020001b, 0x08000000, 0x0000c801 }, /* MOV oPos.xy, v0 */
     };
-    const char *widen = "ndc.x *= 0.75";
+    const char *widen = "ndc.x *= pc.fog.w";
     HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
-    g_hle_horplus = true;
+    g_hle_horplus_scale = 0.75f;
     HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) != NULL);
     HT_CHECK(strstr(buf, "abs(c[3]), vec4(1.0,1.0,1.0,0.0)") != NULL);
@@ -144,7 +144,7 @@ static void test_horplus_projection(void)
     HT_CHECK(hle_vsh_glsl(&hud[0][0], 2, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
     HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 2), 0);
-    HT_CHECK(strstr(buf, "ndc.x = ndc.x * 0.75 + pc.mvp[0][0]") != NULL);
+    HT_CHECK(strstr(buf, "ndc.x = ndc.x * pc.fog.w + pc.mvp[0][0]") != NULL);
     dump("vsh_horplus_hud");
     HT_EQ_INT(hle_vsh_screen_input(&camera[0][0], 3), -1);
     HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 1), -1);
@@ -154,7 +154,7 @@ static void test_horplus_projection(void)
     camera[1][2] &= ~(1u << 8);
     HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
-    g_hle_horplus = false;
+    g_hle_horplus_scale = 0.0f;
 }
 
 int main(void)

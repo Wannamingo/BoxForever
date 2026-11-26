@@ -20,7 +20,35 @@
 #include <time.h>
 #include <pthread.h>
 
-static int g_aspect = NC_ASPECT_AUTO;
+static const struct {
+    const char *name;
+    float ratio;
+} aspect_modes[] = {
+    [NC_ASPECT_AUTO] = { "auto", 0 },
+    [NC_ASPECT_4_3] = { "4:3", 4.0f / 3.0f },
+    [NC_ASPECT_3_2] = { "3:2", 3.0f / 2.0f },
+    [NC_ASPECT_16_10] = { "16:10", 16.0f / 10.0f },
+    [NC_ASPECT_16_9] = { "16:9", 16.0f / 9.0f },
+    [NC_ASPECT_21_9] = { "21:9", 21.0f / 9.0f },
+    [NC_ASPECT_STRETCH] = { "stretch", 0 },
+};
+
+NcAspect nc_aspect_parse(const char *name)
+{
+    for (unsigned i = 0; i < sizeof(aspect_modes) / sizeof(aspect_modes[0]); i++) {
+        if (!strcmp(name, aspect_modes[i].name)) {
+            return (NcAspect)i;
+        }
+    }
+    return NC_ASPECT_AUTO;
+}
+
+float nc_aspect_ratio(NcAspect mode)
+{
+    return aspect_modes[mode].ratio;
+}
+
+static NcAspect g_aspect = NC_ASPECT_AUTO;
 static bool g_widescreen;
 static bool g_fxaa;
 static int g_upscale = NC_UPSCALE_BILINEAR;
@@ -125,7 +153,7 @@ void nc_present_set_picture(int brightness, int contrast, int saturation, int ga
            brightness, contrast, saturation, gamma, sharpness);
 }
 
-void nc_present_set_aspect(int mode)
+void nc_present_set_aspect(NcAspect mode)
 {
     g_aspect = mode;
 }
@@ -193,29 +221,24 @@ static void debug_poll(void)
     g_dbg.average = !strstr(v, "noaverage");
 }
 
-/* The frame's half size in the window (clip space): letterboxed to the
- * chosen shape, the frame's own (4:3 for 640x480), 4:3, 16:9, or the
- * window's (stretched). */
+/* The frame's half size in the window (clip space), fitted to the chosen ratio. */
 static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, float *sx, float *sy)
 {
     const float wa = (float)ww / (float)wh;
-    float fa = (float)fw / (float)fh;
+    float fa = nc_aspect_ratio(g_aspect);
     switch (g_aspect) {
-    case NC_ASPECT_4_3:
-        fa = 4.0f / 3.0f;
-        break;
-    case NC_ASPECT_16_9:
-        fa = 16.0f / 9.0f;
-        break;
     case NC_ASPECT_STRETCH:
         fa = wa;
         break;
-    default:
+    case NC_ASPECT_AUTO:
+        fa = (float)fw / (float)fh;
         /* A standard-definition frame (640x480, 720x480: under 16:10) from a
          * console set to widescreen is anamorphic 16:9. */
         if (g_widescreen && fa < 1.6f) {
-            fa = 16.0f / 9.0f;
+            fa = nc_aspect_ratio(NC_ASPECT_16_9);
         }
+        break;
+    default:
         break;
     }
     if(g_movie_w&&g_movie_h)fa=(float)g_movie_w/g_movie_h;
@@ -233,12 +256,9 @@ static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, float *sx,
     const uint64_t frame = (uint64_t)fw << 32 | fh, window = (uint64_t)ww << 32 | wh;
     const int mode = g_aspect * 2 + g_widescreen + (g_movie_w ? (g_movie_w*4096+g_movie_h)*16:0);
     if (frame != last_frame || window != last_window || mode != last_mode) {
-        const char *aspect = g_aspect == NC_ASPECT_4_3 ? "4:3" :
-                             g_aspect == NC_ASPECT_16_9 ? "16:9" :
-                             g_aspect == NC_ASPECT_STRETCH ? "stretch" : "auto";
         const uint32_t vw = (uint32_t)(ww * *sx + 0.5f), vh = (uint32_t)(wh * *sy + 0.5f);
         nc_log("hakuX-app", "present layout: aspect=%s frame=%ux%u window=%ux%u viewport=%ux%u offset=%u,%u",
-               aspect, fw, fh, ww, wh, vw, vh, (ww - vw) / 2, (wh - vh) / 2);
+               aspect_modes[g_aspect].name, fw, fh, ww, wh, vw, vh, (ww - vw) / 2, (wh - vh) / 2);
         last_frame = frame;
         last_window = window;
         last_mode = mode;

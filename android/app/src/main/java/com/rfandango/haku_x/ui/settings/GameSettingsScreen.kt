@@ -46,7 +46,7 @@ private val SECTIONS: List<Pair<Int, List<Overridable>>> = listOf(
     Overridable(GameSetting.FPS_LIMIT, R.string.settings_fps_limit, FRAME_LIMITS.map { it.toString() },
       { it.frameRateLimit.toString() }, { fpsLimitLabel(it.toInt()) }),
     Overridable(GameSetting.UNCAPPED, R.string.settings_uncap, ON_OFF, { it.uncapped.toString() }, { onOff(it) }),
-    Overridable(GameSetting.ASPECT, R.string.settings_aspect, ASPECTS, { it.aspectRatio }, { stringResource(aspectLabel(it)) }),
+    Overridable(GameSetting.ASPECT, R.string.settings_aspect, AppPrefs.ASPECTS, { it.aspectRatio }, { stringResource(aspectLabel(it)) }),
     Overridable(GameSetting.HORPLUS, R.string.settings_horplus, ON_OFF, { it.horPlus.toString() }, { onOff(it) }),
   ),
   R.string.settings_section_graphics to listOf(

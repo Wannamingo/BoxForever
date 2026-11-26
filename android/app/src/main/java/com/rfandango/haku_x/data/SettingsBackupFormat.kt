@@ -16,7 +16,7 @@ internal object SettingsBackupFormat {
   private val booleans = setOf(GameSetting.HORPLUS.key, "uncap_fps", "async_shaders", "prebuild_shaders", "show_hitches", "show_fps",
     "video_480p", "video_720p", "video_1080i", "video_pal60", "updates_include_preview")
   private val choices = mapOf(
-    "app_theme" to setOf("system", "light", "dark"), "aspect_ratio" to setOf("auto", "4:3", "16:9", "stretch"),
+    "app_theme" to setOf("system", "light", "dark"), "aspect_ratio" to AppPrefs.ASPECTS.toSet(),
     "upscale_filter" to setOf("bilinear", "sgsr", "fsr"), "console_language" to setOf("auto", "en", "ja", "de", "fr", "es", "it", "ko", "zh", "pt"),
     "video_screen_format" to setOf("normal", "letterbox", "widescreen"), "video_av_pack" to setOf("hdtv", "standard", "svideo"),
     "console_network" to setOf("off", "lan", "kai"),

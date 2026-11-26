@@ -10,8 +10,9 @@ class SettingsBackupFormatTest {
   private fun sample(): SettingsBackupFormat.Snapshot = SettingsBackupFormat.Snapshot(
     mapOf(
       "x1box_prefs" to mapOf("app_theme" to "dark", "frame_rate_limit" to 120, "render_scale_fraction" to 1.5f,
-        "console_clock_offset" to 123456789012L, "show_fps" to false, "upscale_filter" to "fsr"),
-      "per_game_settings" to mapOf("12345678.1/fps_limit" to "60", "12345678.1/upscale" to "fsr", "path:folder/game/render_scale" to "2.5"),
+        "console_clock_offset" to 123456789012L, "show_fps" to false, "upscale_filter" to "fsr", "aspect_ratio" to "21:9"),
+      "per_game_settings" to mapOf("12345678.1/fps_limit" to "60", "12345678.1/upscale" to "fsr",
+        "12345678.1/aspect" to "16:10", "path:folder/game/render_scale" to "2.5", "path:folder/game/aspect" to "3:2"),
       "library_ui" to mapOf("covers" to true, "cover_size" to 2),
     ),
     SettingsBackupFormat.files.associateWith { name -> when (name) {

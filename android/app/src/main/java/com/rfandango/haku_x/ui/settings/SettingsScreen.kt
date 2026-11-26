@@ -590,7 +590,7 @@ fun SettingsScreen(
   if (aspectDialog) {
     ChoiceDialog(
       title = stringResource(R.string.settings_aspect),
-      options = ASPECTS.map { it to stringResource(aspectLabel(it)) },
+      options = AppPrefs.ASPECTS.map { it to stringResource(aspectLabel(it)) },
       current = aspect,
       onPick = { aspect = it; prefs.aspectRatio = it; aspectDialog = false },
       onDismiss = { aspectDialog = false },
@@ -666,8 +666,6 @@ internal fun scaleLabel(value: Float): String = if (value == 1f) {
 @Composable
 private fun scaleNumber(value: Float) =
   java.text.NumberFormat.getNumberInstance(LocalConfiguration.current.locales[0]).format(value)
-
-internal val ASPECTS = listOf("auto", "4:3", "16:9", "stretch")
 
 internal val UPSCALERS = listOf(NativeCoreActivity.UPSCALE_BILINEAR, NativeCoreActivity.UPSCALE_SGSR, NativeCoreActivity.UPSCALE_FSR)
 internal val FORMATS = listOf(AppPrefs.FORMAT_NORMAL, AppPrefs.FORMAT_LETTERBOX, AppPrefs.FORMAT_WIDESCREEN)
@@ -750,7 +748,10 @@ internal fun upscaleLabel(value: String) = when (value) {
 
 internal fun aspectLabel(value: String) = when (value) {
   "4:3" -> R.string.settings_aspect_4_3
+  "3:2" -> R.string.settings_aspect_3_2
+  "16:10" -> R.string.settings_aspect_16_10
   "16:9" -> R.string.settings_aspect_16_9
+  "21:9" -> R.string.settings_aspect_21_9
   "stretch" -> R.string.settings_aspect_stretch
   else -> R.string.settings_aspect_auto
 }

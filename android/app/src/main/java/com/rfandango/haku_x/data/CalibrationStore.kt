@@ -76,10 +76,14 @@ class CalibrationStore(private val context: Context) {
   }
   fun configurationKey(game:String):String {
     val options=ExperienceStore(context).effective(game)
-    val wide = RunSettings(AppPrefs(context), GameOverrides(context, game)).horPlusActive
+    val run = RunSettings(AppPrefs(context), GameOverrides(context, game))
+    val horPlus = if (run.horPlusActive) when (run.aspectRatio) {
+      "3:2", "16:10", "21:9" -> "|horplus=${run.aspectRatio}"
+      else -> "|horplus"
+    } else ""
     return digest(deviceKey(context)+"|aniso="+options[ExperienceSetting.ANISOTROPY]+"|movie="+options[ExperienceSetting.MOVIE_ASPECT]+
       "|"+options.dynamicArgument()+
-      PostShaders.calibrationSuffix(options) + (if (wide) "|horplus" else ""))
+      PostShaders.calibrationSuffix(options) + horPlus)
   }
   companion object {
     fun active(context:Context,game:String) {

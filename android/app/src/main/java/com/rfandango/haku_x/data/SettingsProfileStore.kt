@@ -85,7 +85,7 @@ class SettingsProfileStore(private val context: Context) {
       GameSetting.VIDEO_480P, GameSetting.VIDEO_720P, GameSetting.VIDEO_1080I, GameSetting.PAL60 -> value in listOf("true", "false")
       GameSetting.FPS_LIMIT -> value.toIntOrNull()?.let { it in 0..240 } == true
       GameSetting.RENDER_SCALE -> RenderScale.parse(value) != null
-      GameSetting.ASPECT -> value in listOf("auto", "4:3", "16:9", "stretch")
+      GameSetting.ASPECT -> value in AppPrefs.ASPECTS
       GameSetting.UPSCALE -> value in listOf("bilinear", "sgsr", "fsr")
       GameSetting.LANGUAGE -> value == AppPrefs.LANG_AUTO || value in AppPrefs.XBOX_LANGUAGES
       GameSetting.SCREEN_FORMAT -> value in listOf("normal", "letterbox", "widescreen")

@@ -173,7 +173,7 @@ typedef struct HleFfPush {
     float zscale;                     /* vertex programs: 1 / depth maximum (2^-n for
                                          the integer formats: HLE_ZNORM_GLSL) */
     uint32_t fog_color;               /* FOGCOLOR (D3DCOLOR) */
-    float fog[4];                     /* FOGSTART, FOGEND, FOGDENSITY, 0 */
+    float fog[4];                     /* FOGSTART, FOGEND, FOGDENSITY, Hor+ horizontal scale */
     uint32_t psc[20];                 /* pixel shaders: C0[8], C1[8], final C0, C1
                                          (D3DCOLOR), W-buffer offset and slope */
     float scr[4];                     /* fixed function: D3D screen pixels = xy *
@@ -299,14 +299,14 @@ static inline const char *hle_push_glsl(void)
  * covers, Dead or Alive 2's eaves shadows). debug.hakux.snap=trunc: the
  * truncation (HLE_SNAP_TRUNC_FLAG), for A/B. */
 #define HLE_SNAP_TRUNC_FLAG 8192u
-/* Hor+ scales perspective clip X by 4:3 / 16:9; the output restores its
- * proportions when displayed in 16:9. Push-block bit 14 is free. */
-extern bool g_hle_horplus;
+/* Hor+ scales perspective clip X by the 4:3 source ratio divided by the
+ * selected output ratio. Zero disables Hor+ for this run. */
+extern float g_hle_horplus_scale;
 #define HLE_HORPLUS_FLAG 16384u
 /* Screen-space HUD: 4:3 width at the left, centre, or right anchor. */
 #define HLE_HUD_ANCHOR_FLAG 32768u
 #define HLE_HUD_ANCHOR_GLSL \
-    "  if ((pc.flags & 32768u) != 0u) ndc.x = ndc.x * 0.75 + pc.mvp[0][0];\n"
+    "  if ((pc.flags & 32768u) != 0u) ndc.x = ndc.x * pc.fog.w + pc.mvp[0][0];\n"
 #define HLE_SUBPIXEL_GLSL(v) \
     "  " v " = (pc.flags & 8192u) != 0u ? trunc(" v " * 16.0) / 16.0 : " v " - 0.03125;\n"
 

@@ -17,10 +17,14 @@ bool nc_present_init(void);
  * into win, waiting for the panel; false when nothing could be presented
  * (the HLE GPU not up yet, no window). */
 bool nc_present_frame(struct ANativeWindow *win);
-/* The picture's shape on screen: the frame's own (auto: 4:3 for 640x480),
- * 4:3, 16:9 (a widescreen title's anamorphic 640x480), or the whole window. */
-enum { NC_ASPECT_AUTO, NC_ASPECT_4_3, NC_ASPECT_16_9, NC_ASPECT_STRETCH };
-void nc_present_set_aspect(int mode);
+/* The picture's shape on screen: the frame's own, a fixed ratio, or the window's. */
+typedef enum NcAspect {
+    NC_ASPECT_AUTO, NC_ASPECT_4_3, NC_ASPECT_3_2, NC_ASPECT_16_10,
+    NC_ASPECT_16_9, NC_ASPECT_21_9, NC_ASPECT_STRETCH,
+} NcAspect;
+NcAspect nc_aspect_parse(const char *name);
+float nc_aspect_ratio(NcAspect mode); /* zero for automatic or stretched output */
+void nc_present_set_aspect(NcAspect mode);
 void nc_present_set_movie(int mode); /* 0 original,1 4:3,2 16:9,3 source aspect */
 bool nc_present_toggle_movie(void);  /* manual override for unrecognized/in-engine scenes */
 /* The console is set to widescreen: auto shows a 4:3-sized frame as 16:9

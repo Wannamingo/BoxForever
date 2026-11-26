@@ -5,7 +5,7 @@
  *   argv[2]  the hard disk folder (Partition0-5 and the raw sector files)
  *   argv[3+] options: the core's (native/core/options.h: "uncap",
  *            "loadstate=", "scale=", "video=", "asyncpipe=", "mods=", ...),
- *            and the window's: "aspect=auto|4:3|16:9|stretch" the picture's
+ *            and the window's: "aspect=auto|4:3|3:2|16:10|16:9|21:9|stretch" the picture's
  *            shape, "fxaa=0|1" FXAA over each frame and
  *            "upscale=bilinear|sgsr" how a frame smaller than its place on
  *            screen is scaled up; "padinput=sdl" the legacy input (the first
@@ -643,6 +643,7 @@ EXPORT int SDL_main(int argc, char *argv[])
     }
     NcOptions opt;
     nc_options_init(&opt);
+    NcAspect aspect = NC_ASPECT_AUTO;
     for (int i = 3; i < argc; i++) {
         if (nc_option(&opt, argv[i])) {
             continue;                           /* the core's (native/core/options.h) */
@@ -671,10 +672,7 @@ EXPORT int SDL_main(int argc, char *argv[])
         }
         if (!strncmp(argv[i], "aspect=", 7)) {
             const char *a = argv[i] + 7;
-            nc_present_set_aspect(!strcmp(a, "4:3")       ? NC_ASPECT_4_3
-                                  : !strcmp(a, "16:9")    ? NC_ASPECT_16_9
-                                  : !strcmp(a, "stretch") ? NC_ASPECT_STRETCH
-                                                          : NC_ASPECT_AUTO);
+            aspect = nc_aspect_parse(a);
             nc_log("hakuX-app", "aspect ratio %s", a);
         }
         if(!strncmp(argv[i],"movie=",6))nc_present_set_movie(atoi(argv[i]+6));
@@ -722,8 +720,13 @@ EXPORT int SDL_main(int argc, char *argv[])
         opt.horplus = false;
     }
     if (opt.horplus) {
-        nc_present_set_aspect(NC_ASPECT_16_9);
+        const float original = nc_aspect_ratio(NC_ASPECT_4_3);
+        if (nc_aspect_ratio(aspect) <= original) {
+            aspect = NC_ASPECT_16_9;
+        }
+        opt.horplus_scale = original / nc_aspect_ratio(aspect);
     }
+    nc_present_set_aspect(aspect);
     nc_options_apply(&opt);
     nc_present_set_widescreen(opt.video >= 0 && (opt.video & NC_VIDEO_WIDESCREEN));
     nc_log("hakuX-app", "native core: disc %s, hdd %s%s", disc, argv[2], opt.uncap ? ", frame rate uncapped" : "");

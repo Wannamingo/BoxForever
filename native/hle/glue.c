@@ -34,9 +34,9 @@ static NcCpu *g_cpu;
 static uint32_t g_fs_base;
 static bool g_active;
 
-void nc_hle_set_horplus(bool enabled)
+void nc_hle_set_horplus(float scale)
 {
-    g_hle_horplus = enabled;
+    g_hle_horplus_scale = scale;
 }
 
 void nc_hle_set_pipeline_options(bool async, bool prebuild)

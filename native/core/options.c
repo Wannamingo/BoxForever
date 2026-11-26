@@ -18,7 +18,8 @@
 
 void nc_options_init(NcOptions *o)
 {
-    *o = (NcOptions){ .async_pipe = true, .prebuild = true, .video = -1, .av_pack = NC_AV_PACK_HDTV };
+    *o = (NcOptions){ .async_pipe = true, .prebuild = true, .horplus_scale = 0.75f,
+                      .video = -1, .av_pack = NC_AV_PACK_HDTV };
 }
 
 static const char *value(const char *arg, const char *name)
@@ -91,9 +92,10 @@ void nc_options_apply(const NcOptions *o)
     /* The console's video settings: what the title may show (widescreen,
      * 480p/720p/1080i) and the cable it finds (HD modes need component). */
     nc_kernel_set_video(o->video, o->av_pack);
-    nc_hle_set_horplus(o->horplus);
+    nc_hle_set_horplus(o->horplus ? o->horplus_scale : 0.0f);
     if (o->horplus) {
-        nc_log("hakuX-app", "widescreen: experimental Hor+ enabled");
+        nc_log("hakuX-app", "widescreen: experimental Hor+ enabled (horizontal scale %.6f)",
+               o->horplus_scale);
     }
     if (o->video >= 0) {
         nc_log("hakuX-app", "video flags %08llx, AV pack %d", (unsigned long long)o->video, o->av_pack);

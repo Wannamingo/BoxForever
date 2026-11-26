@@ -107,7 +107,7 @@ class AppPrefs(context: Context) {
       }
     }
 
-  /** The picture's shape: auto, 4:3, 16:9 or stretch (read at game start). */
+  /** The picture's shape (read at game start). */
   var aspectRatio: String
     get() = sp.getString(NativeCoreActivity.PREF_ASPECT, NativeCoreActivity.ASPECT_AUTO) ?: NativeCoreActivity.ASPECT_AUTO
     set(value) = sp.edit { putString(NativeCoreActivity.PREF_ASPECT, value) }
@@ -231,6 +231,7 @@ class AppPrefs(context: Context) {
 
   companion object {
     const val NAME = "x1box_prefs"
+    internal val ASPECTS = listOf("auto", "4:3", "3:2", "16:10", "16:9", "21:9", "stretch")
     private const val KEY_GAMES_FOLDER = "gamesFolderUri"
     private const val KEY_GAMES_FOLDERS = "gamesFolders"
     private const val KEY_SETUP_COMPLETE = "setup_complete"

@@ -3596,7 +3596,8 @@ static void hud_draw(VkCommandBuffer cb, const HleCmdDraw *c, uint32_t vfirst,
         const bool anchor = seg->anchor != HUD_UNMODIFIED;
         pc->flags &= ~(HLE_HORPLUS_FLAG | HLE_HUD_ANCHOR_FLAG);
         pc->flags |= anchor ? HLE_HUD_ANCHOR_FLAG : 0;
-        pc->mvp[0] = anchor ? (float)seg->anchor * 0.25f : 0.0f;
+        pc->fog[3] = anchor ? g_hle_horplus_scale : 0.0f;
+        pc->mvp[0] = anchor ? (float)seg->anchor * (1.0f - pc->fog[3]) : 0.0f;
         if (!g_rec.valid || memcmp(&g_rec.pc, pc, sizeof(*pc))) {
             g_rec.pc = *pc;
             if (g_hle_push_ssbo) {
@@ -4277,13 +4278,14 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
                 (aax > 1.0f || aay > 1.0f ? HLE_TEXEL_EDGE_FLAG : 0u) | (g_snap_trunc ? HLE_SNAP_TRUNC_FLAG : 0u);
     /* Leave screen-space draws, depth-only targets and split-screen panes alone.
      * The programmable shader additionally checks how its position is projected. */
-    if (g_hle_horplus && rt && ds && !rhw && s->rs[RS_ZENABLE] && tw && th &&
+    if (g_hle_horplus_scale && rt && ds && !rhw && s->rs[RS_ZENABLE] && tw && th &&
         (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
         (full || (vpc->x <= 1 && vpc->y <= 1 && vpc->w + 1 >= tw && vpc->h + 1 >= th)) &&
         (!vpc->clip || (vpc->cx1 <= 1 && vpc->cy1 <= 1 &&
                         vpc->cx2 >= (int32_t)tw - 1 && vpc->cy2 >= (int32_t)th - 1)) &&
         (prog || fabsf(pc.mvp[3]) + fabsf(pc.mvp[7]) + fabsf(pc.mvp[11]) >= 1e-6f)) {
         pc.flags |= HLE_HORPLUS_FLAG;
+        pc.fog[3] = g_hle_horplus_scale;
         static bool noted_horplus;
         if (!noted_horplus) {
             noted_horplus = true;
@@ -4539,7 +4541,7 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
                           !s->rs[RS_ZENABLE] && s->rs[RS_ALPHABLENDENABLE];
     /* The final 4:3 surface, full viewport and alpha UI only. Skip a pass
      * writing depth, and preserve horizontal scissors on partial layers. */
-    if (g_hle_horplus && rt && tw && th && (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
+    if (g_hle_horplus_scale && rt && tw && th && (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
         (full || (vpc->x <= 1 && vpc->y <= 1 && vpc->w + 1 >= tw && vpc->h + 1 >= th)) &&
         (!vpc->clip || (vpc->cx1 <= 1 && vpc->cx2 >= (int32_t)tw - 1)) &&
         (!s->rs[RS_ZENABLE] || !s->rs[RS_ZWRITEENABLE]) &&

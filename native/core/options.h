@@ -35,6 +35,7 @@
 
 typedef struct NcOptions {
     bool uncap, async_pipe, prebuild, horplus;
+    float horplus_scale;       /* original 4:3 divided by the output ratio */
     unsigned fps_limit;
     int64_t video;              /* -1: the core's default */
     int av_pack;                /* NC_AV_PACK_* */

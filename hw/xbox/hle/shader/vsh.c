@@ -538,7 +538,7 @@ size_t hle_vsh_glsl(const uint32_t *tokens, unsigned nslots, const HleVshKey *k,
     Buf b = { buf, cap, 0, false };
     head(&b, k);
     bool final = false, fogw = false;
-    const bool check_projection = g_hle_horplus && !k->zfree;
+    const bool check_projection = g_hle_horplus_scale && !k->zfree;
     ProjectionTrace projection = { .in_mask = k->in_mask, .cmp_mask = k->cmp_mask, .next_origin = 64 };
     for (unsigned s = 0; s < nslots && s < HLE_VSH_MAX_SLOTS && !final; s++) {
         Nv2aVshStep st;
@@ -634,10 +634,10 @@ static void tail(Buf *bp, const HleVshKey *k, bool fogw, const char *perspective
     if (!k->wbuf && !k->zfree) {
         put(&b, HLE_ZNORM_GLSL("oPos.z", "zN"));
     }
-    if (g_hle_horplus && !k->zfree && perspective) {
-        put(&b, "  if ((pc.flags & %uu) != 0u && (%s)) ndc.x *= 0.75;\n", HLE_HORPLUS_FLAG, perspective);
+    if (g_hle_horplus_scale && !k->zfree && perspective) {
+        put(&b, "  if ((pc.flags & %uu) != 0u && (%s)) ndc.x *= pc.fog.w;\n", HLE_HORPLUS_FLAG, perspective);
     }
-    if (g_hle_horplus) {
+    if (g_hle_horplus_scale) {
         put(&b, HLE_HUD_ANCHOR_GLSL);
     }
     put(&b, "  gl_Position = vec4(ndc * w, %s, w);\n", k->wbuf || k->zfree ? "0.0" : "zN * w");
