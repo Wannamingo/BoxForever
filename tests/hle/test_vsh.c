@@ -168,22 +168,34 @@ static void test_horplus_overlay_layout(void)
     const HleHorplusBox left = { 0.05f, 0.70f, 0.27f, 0.94f };
     const HleHorplusBox right = { 0.72f, 0.70f, 0.95f, 0.94f };
     const HleHorplusBox menu_tile = { 0.04f, 0.03f, 0.20f, 0.97f };
-    const HleHorplusBox heading = { 0.10f, 0.12f, 0.49f, 0.19f };
-    bool panel = false;
-    HT_EQ_INT(hle_horplus_anchor(left, false, &panel), HLE_HORPLUS_KEEP);
-    HT_CHECK(!panel);
-    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0, 0, 1, 1 }, true, &panel), HLE_HORPLUS_KEEP);
-    HT_CHECK(!panel);
-    HT_EQ_INT(hle_horplus_anchor(left, true, &panel), HLE_HORPLUS_LEFT);
-    HT_EQ_INT(hle_horplus_anchor(right, true, &panel), HLE_HORPLUS_RIGHT);
-    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.45f, 0.10f, 0.55f, 0.18f }, true, &panel),
+    const HleHorplusBox adjacent = { 0.20f, 0.03f, 0.58f, 0.97f };
+    const HleHorplusBox heading = { 0.10f, 0.12f, 0.79f, 0.19f };
+    const HleHorplusBox clipped_gauge = { 0.710f, 0.659f, 1.070f, 1.156f };
+    HleHorplusLayout layout = { 0 };
+    HT_EQ_INT(hle_horplus_anchor(left, false, 4, &layout), HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0, 0, 1, 1 }, true, 4, &layout), HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor(left, true, 4, &layout), HLE_HORPLUS_LEFT);
+    HT_EQ_INT(hle_horplus_anchor(right, true, 4, &layout), HLE_HORPLUS_RIGHT);
+    HT_EQ_INT(hle_horplus_anchor(clipped_gauge, true, 4, &layout), HLE_HORPLUS_RIGHT);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.45f, 0.10f, 0.55f, 0.18f }, true, 4, &layout),
               HLE_HORPLUS_CENTER);
-    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.25f, 0.10f, 0.50f, 0.18f }, true, &panel),
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.25f, 0.25f, 0.50f, 0.33f }, true, 4, &layout),
               HLE_HORPLUS_KEEP);
-    HT_EQ_INT(hle_horplus_anchor(heading, true, &panel), HLE_HORPLUS_KEEP);
-    HT_EQ_INT(hle_horplus_anchor(menu_tile, true, &panel), HLE_HORPLUS_KEEP);
-    HT_CHECK(panel);
-    HT_EQ_INT(hle_horplus_anchor(left, true, &panel), HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor(heading, true, 6, &layout), HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.28f, 0.10f, 0.33f, 0.14f }, true, 4, &layout),
+              HLE_HORPLUS_LEFT);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.34f, 0.10f, 0.37f, 0.14f }, true, 4, &layout),
+              HLE_HORPLUS_LEFT);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.49f, 0.10f, 0.53f, 0.14f }, true, 4, &layout),
+              HLE_HORPLUS_CENTER);
+    HT_EQ_INT(hle_horplus_anchor(adjacent, true, 3, &layout), HLE_HORPLUS_KEEP);
+    HT_CHECK(!layout.have_tile);
+    HT_EQ_INT(hle_horplus_anchor(menu_tile, true, 4, &layout), HLE_HORPLUS_KEEP);
+    HT_CHECK(!layout.tiled_panel);
+    HT_EQ_INT(hle_horplus_anchor(left, true, 4, &layout), HLE_HORPLUS_LEFT);
+    HT_EQ_INT(hle_horplus_anchor(adjacent, true, 6, &layout), HLE_HORPLUS_KEEP);
+    HT_CHECK(layout.tiled_panel);
+    HT_EQ_INT(hle_horplus_anchor(left, true, 4, &layout), HLE_HORPLUS_KEEP);
 }
 
 int main(void)

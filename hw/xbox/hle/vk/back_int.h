@@ -7,6 +7,7 @@
 
 #include "hw/xbox/hle/vk/vkdev.h"
 #include "hw/xbox/hle/vk/back.h"
+#include "hw/xbox/hle/vk/horplus_layout.h"
 #include "hw/xbox/hle/vk/render_scale.h"
 #include "hw/xbox/hle/front/cmd.h"
 
@@ -77,7 +78,8 @@ typedef struct HleVkSurf {
     /* asynchronous pipeline builds (vk/draw.c target_note): the last swap a
      * draw targeted it and the one before (swap count + 1, 0: never) */
     uint64_t drawn_cur, drawn_prev;
-    uint64_t horplus_panel_frame; /* swap count + 1 of the last large 2D panel */
+    uint64_t horplus_layout_frame; /* swap count + 1 that owns horplus_layout */
+    HleHorplusLayout horplus_layout;
 } HleVkSurf;
 
 /* A pass or copy may write s: its wgen changes (zread.c converts again). */

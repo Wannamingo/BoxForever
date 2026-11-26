@@ -30,7 +30,6 @@
 #include "hw/xbox/hle/vk/pcache.h"
 #include "hw/xbox/hle/vk/pipeasync.h"
 #include "hw/xbox/hle/vk/filter_policy.h"
-#include "hw/xbox/hle/vk/horplus_layout.h"
 
 #define T (g_hvk.t)
 #define HLE_MAX_TEX      2048
@@ -4270,16 +4269,30 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
             }
         } else if ((!s->rs[RS_ZENABLE] || !s->rs[RS_ZWRITEENABLE]) &&
                    (s->rs[RS_ALPHABLENDENABLE] || s->rs[RS_ALPHATESTENABLE]) &&
-                   rt->horplus_panel_frame != frame && !g_probe.nvsh && !g_hle_gpucut) {
+                   !g_probe.nvsh && !g_hle_gpucut) {
+            if (rt->horplus_layout_frame != frame) {
+                rt->horplus_layout_frame = frame;
+                rt->horplus_layout = (HleHorplusLayout){ 0 };
+            }
             const bool nfsu2_hud = c->vsh == nfsu2_hud_program && aax * 640 == tw && aay * 480 == th &&
                                    !s->rs[RS_ZENABLE] && s->rs[RS_ALPHABLENDENABLE];
             HleHorplusBox box;
             const char *path;
-            if (hud_bounds(c, rhw, nfsu2_hud, &pc, ad, na, &box, &path)) {
-                bool panel = false;
-                const int anchor = hle_horplus_anchor(box, g_dr.horplus_world_frame == frame, &panel);
-                if (panel) {
-                    rt->horplus_panel_frame = frame;
+            if (!rt->horplus_layout.tiled_panel && hud_bounds(c, rhw, nfsu2_hud, &pc, ad, na, &box, &path)) {
+                const bool world = g_dr.horplus_world_frame == frame;
+                const int anchor = hle_horplus_anchor(box, world, c->count, &rt->horplus_layout);
+                if (g_psf_frame >= 0 && frame == (uint64_t)g_psf_frame + 1) {
+                    static uint64_t traced_frame;
+                    static unsigned traces;
+                    if (traced_frame != frame) {
+                        traced_frame = frame;
+                        traces = 0;
+                    }
+                    if (traces++ < 72) {
+                        hle_log("hakuX-hle", "widescreen: layout rt=%u n=%u box %.3f %.3f %.3f %.3f world=%u panel=%u anchor=%d",
+                                rt_id, c->count, box.left, box.top, box.right, box.bottom,
+                                world, rt->horplus_layout.tiled_panel, anchor);
+                    }
                 }
                 if (anchor != HLE_HORPLUS_KEEP) {
                     pc.flags |= HLE_HUD_ANCHOR_FLAG;
