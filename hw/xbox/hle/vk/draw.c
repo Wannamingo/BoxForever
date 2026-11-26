@@ -3395,6 +3395,10 @@ typedef struct HudSegment {
 
 enum { HUD_MAX_SEGMENTS = 48, HUD_MAX_VERTICES = 2048, HUD_UNMODIFIED = 2 };
 
+/* The NFS Underground 2 program shared by race geometry and HUD quads.
+ * Apply its screen-space transform only on the full-resolution UI pass. */
+static const uint64_t nfsu2_hud_program = UINT64_C(0xa040a881e55cf299);
+
 static const uint8_t *hud_buffer(uint32_t offset, uint32_t length, bool guest)
 {
     if (guest) {
@@ -3428,7 +3432,7 @@ static bool hud_add_segment(HudSegment *segments, unsigned *used, uint32_t first
     return true;
 }
 
-static unsigned hud_plan(const HleCmdDraw *c, bool rhw, const HleFfPush *pc,
+static unsigned hud_plan(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfPush *pc,
                          const VkVertexInputAttributeDescription2EXT *attrs, uint32_t count,
                          HudSegment *segments, const char **path)
 {
@@ -3438,14 +3442,27 @@ static unsigned hud_plan(const HleCmdDraw *c, bool rhw, const HleFfPush *pc,
          c->prim != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)) {
         return 0;
     }
-    const int screen = c->vsh ? hud_program(c->vsh) : rhw ? 0 : -1;
+    const int screen = nfsu2 ? 0 : c->vsh ? hud_program(c->vsh) : rhw ? 0 : -1;
     if (screen < 0) {
         return 0;
     }
     const bool affine = screen == 16;
     const uint32_t location = affine ? 0 : (uint32_t)screen;
-    float row[4] = { 1, 0, 0, 0 }, divisor = 1, translation = 0;
-    if (affine) {
+    float row[4] = { 1, 0, 0, 0 }, wrow[4] = { 0 };
+    float divisor = 1, scale = 1, translation = 0;
+    if (nfsu2) {
+        /* Decoded with nv2a_vsh_cpu: dot(v0,c96) * rcc(dot(v0,c99))
+         * * c160.x + c161.x. These uniforms also handle rotating UI quads. */
+        const uint8_t *constants = hud_buffer(c->consts_off, 162 * 16, false);
+        if (!constants) {
+            return 0;
+        }
+        memcpy(row, constants + 96 * 16, sizeof(row));
+        memcpy(wrow, constants + 99 * 16, sizeof(wrow));
+        memcpy(&scale, constants + 160 * 16, sizeof(scale));
+        memcpy(&translation, constants + 161 * 16, sizeof(translation));
+        *path = "Underground 2 UI program";
+    } else if (affine) {
         float matrix[5][4];
         const uint32_t offset = c->consts_off + HLE_FFHW_C_COMPOSITE * 16;
         const uint8_t *constants = hud_buffer(offset, 64, false);
@@ -3535,7 +3552,14 @@ static unsigned hud_plan(const HleCmdDraw *c, bool rhw, const HleFfPush *pc,
             }
             float v[4] = { 0, 0, 0, 1 };
             memcpy(v, vertices + (size_t)index * stride + field, bytes);
-            const float x = ((v[0] * row[0] + v[3] * row[3]) / divisor + translation) * (pc->vp[0] * 0.5f);
+            const float clip_x = v[0] * row[0] + v[1] * row[1] + v[2] * row[2] + v[3] * row[3];
+            if (nfsu2) {
+                divisor = v[0] * wrow[0] + v[1] * wrow[1] + v[2] * wrow[2] + v[3] * wrow[3];
+                if (!isfinite(divisor) || divisor <= 1e-6f) {
+                    return 0;
+                }
+            }
+            const float x = ((clip_x * scale) / divisor + translation) * (pc->vp[0] * 0.5f);
             if (!isfinite(x) || x < -0.6f || x > 1.6f) {
                 return 0;
             }
@@ -4511,6 +4535,8 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
     HudSegment hud[HUD_MAX_SEGMENTS];
     const char *hud_path = NULL;
     unsigned hud_count = 0;
+    const bool nfsu2_hud = c->vsh == nfsu2_hud_program && aax * 640 == tw && aay * 480 == th &&
+                          !s->rs[RS_ZENABLE] && s->rs[RS_ALPHABLENDENABLE];
     /* The final 4:3 surface, full viewport and alpha UI only. Skip a pass
      * writing depth, and preserve horizontal scissors on partial layers. */
     if (g_hle_horplus && rt && tw && th && (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
@@ -4519,11 +4545,11 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
         (!s->rs[RS_ZENABLE] || !s->rs[RS_ZWRITEENABLE]) &&
         (s->rs[RS_ALPHABLENDENABLE] || s->rs[RS_ALPHATESTENABLE]) &&
         !g_probe.nvsh && !g_hle_gpucut) {
-        hud_count = hud_plan(c, rhw, &pc, ad, na, hud, &hud_path);
+        hud_count = hud_plan(c, rhw, nfsu2_hud, &pc, ad, na, hud, &hud_path);
     }
     if (hud_count) {
         static unsigned noted;
-        const unsigned bit = !prog ? 1u : hud_path[0] == 'a' ? 2u : 4u;
+        const unsigned bit = nfsu2_hud ? 8u : !prog ? 1u : hud_path[0] == 'a' ? 2u : 4u;
         if (!(noted & bit)) {
             noted |= bit;
             hle_log("hakuX-hle", "widescreen: HUD anchor on %ux%u (%s)", tw, th, hud_path);
