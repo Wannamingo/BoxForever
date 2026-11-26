@@ -40,6 +40,11 @@ typedef struct HleVshKey {
 /* Direct screen-space X/Y binding, or -1 when it cannot be proven. */
 int hle_vsh_screen_input(const uint32_t *tokens, unsigned nslots);
 
+/* The constant supplying the vertex-dependent coefficients of clip W, or -1.
+ * The caller must still check that the selected coefficients are nonzero. */
+int hle_vsh_perspective_constant(const uint32_t *tokens, unsigned nslots, const HleVshKey *key,
+                                 unsigned *mask);
+
 /* Parses nslots 4-dword instructions (stopping at the FINAL one) and writes
  * the GLSL into buf. Returns the length, or 0 when a slot does not decode,
  * no instruction is FINAL, or the text does not fit. */

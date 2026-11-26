@@ -1,5 +1,6 @@
 #include "hw/xbox/hle/shader/vsh.h"
 #include "hw/xbox/hle/shader/ff.h"
+#include "hw/xbox/hle/vk/horplus_layout.h"
 #include "hle_test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,6 +135,10 @@ static void test_horplus_projection(void)
         { 0, 0x0020001b, 0x08000000, 0x0000c801 }, /* MOV oPos.xy, v0 */
     };
     const char *widen = "ndc.x *= pc.fog.w";
+    unsigned mask = 0;
+    HT_EQ_INT(hle_vsh_perspective_constant(&camera[0][0], 3, &key, &mask), 3);
+    HT_EQ_INT(mask, 7);
+    HT_EQ_INT(hle_vsh_perspective_constant(&hud[0][0], 2, &key, &mask), -1);
     HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
     g_hle_horplus_scale = 0.75f;
@@ -152,9 +157,33 @@ static void test_horplus_projection(void)
     /* X/Y still use R1.x, but a swizzle change makes it the reciprocal of
      * screen Z, so it cannot be used to prove division by output W. */
     camera[1][2] &= ~(1u << 8);
+    HT_EQ_INT(hle_vsh_perspective_constant(&camera[0][0], 3, &key, &mask), -1);
     HT_CHECK(hle_vsh_glsl(&camera[0][0], 3, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
     g_hle_horplus_scale = 0.0f;
+}
+
+static void test_horplus_overlay_layout(void)
+{
+    const HleHorplusBox left = { 0.05f, 0.70f, 0.27f, 0.94f };
+    const HleHorplusBox right = { 0.72f, 0.70f, 0.95f, 0.94f };
+    const HleHorplusBox menu_tile = { 0.04f, 0.03f, 0.20f, 0.97f };
+    const HleHorplusBox heading = { 0.10f, 0.12f, 0.49f, 0.19f };
+    bool panel = false;
+    HT_EQ_INT(hle_horplus_anchor(left, false, &panel), HLE_HORPLUS_KEEP);
+    HT_CHECK(!panel);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0, 0, 1, 1 }, true, &panel), HLE_HORPLUS_KEEP);
+    HT_CHECK(!panel);
+    HT_EQ_INT(hle_horplus_anchor(left, true, &panel), HLE_HORPLUS_LEFT);
+    HT_EQ_INT(hle_horplus_anchor(right, true, &panel), HLE_HORPLUS_RIGHT);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.45f, 0.10f, 0.55f, 0.18f }, true, &panel),
+              HLE_HORPLUS_CENTER);
+    HT_EQ_INT(hle_horplus_anchor((HleHorplusBox){ 0.25f, 0.10f, 0.50f, 0.18f }, true, &panel),
+              HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor(heading, true, &panel), HLE_HORPLUS_KEEP);
+    HT_EQ_INT(hle_horplus_anchor(menu_tile, true, &panel), HLE_HORPLUS_KEEP);
+    HT_CHECK(panel);
+    HT_EQ_INT(hle_horplus_anchor(left, true, &panel), HLE_HORPLUS_KEEP);
 }
 
 int main(void)
@@ -166,5 +195,6 @@ int main(void)
     HT_RUN(test_unwritten_fog);
     HT_RUN(test_overflow);
     HT_RUN(test_horplus_projection);
+    HT_RUN(test_horplus_overlay_layout);
     HT_DONE();
 }

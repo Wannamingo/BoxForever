@@ -77,6 +77,7 @@ typedef struct HleVkSurf {
     /* asynchronous pipeline builds (vk/draw.c target_note): the last swap a
      * draw targeted it and the one before (swap count + 1, 0: never) */
     uint64_t drawn_cur, drawn_prev;
+    uint64_t horplus_panel_frame; /* swap count + 1 of the last large 2D panel */
 } HleVkSurf;
 
 /* A pass or copy may write s: its wgen changes (zread.c converts again). */

@@ -30,6 +30,7 @@
 #include "hw/xbox/hle/vk/pcache.h"
 #include "hw/xbox/hle/vk/pipeasync.h"
 #include "hw/xbox/hle/vk/filter_policy.h"
+#include "hw/xbox/hle/vk/horplus_layout.h"
 
 #define T (g_hvk.t)
 #define HLE_MAX_TEX      2048
@@ -197,6 +198,7 @@ static struct {
     struct { VkImageView rt, z; VkImageLayout rl, zl; VkDescriptorSet set; } fblast;
     struct { uint64_t hash; uint32_t nslots; uint32_t *tok; } prog[HLE_MAX_PROGS];
     uint32_t nprog;
+    uint64_t horplus_world_frame; /* swap count + 1 with a verified perspective draw */
     int8_t vfmt[256];                   /* vertex-buffer support: 0 unknown, 1 yes, -1 no */
     uint64_t draws, pipe_fail, compiles, prog_draws, layout_skips;
     uint64_t verts;                     /* vertices (indices) drawn */
@@ -3388,12 +3390,7 @@ static uint32_t first_vertex(uint32_t n, const uint32_t *stride, VkDeviceSize *o
     return (uint32_t)q;
 }
 
-typedef struct HudSegment {
-    uint32_t first, count;
-    int anchor;                  /* -1 left, 0 centre, 1 right, 2 unmodified */
-} HudSegment;
-
-enum { HUD_MAX_SEGMENTS = 48, HUD_MAX_VERTICES = 2048, HUD_UNMODIFIED = 2 };
+enum { HUD_MAX_VERTICES = 2048 };
 
 /* The NFS Underground 2 program shared by race geometry and HUD quads.
  * Apply its screen-space transform only on the full-resolution UI pass. */
@@ -3410,31 +3407,51 @@ static const uint8_t *hud_buffer(uint32_t offset, uint32_t length, bool guest)
     return g_harena.map + offset;
 }
 
-static int hud_anchor(float left, float right)
+static bool horplus_perspective(const HleCmdDraw *c, const HleVshKey *key)
 {
-    if (right - left >= 0.82f) {
-        return HUD_UNMODIFIED; /* widescreen pass, full picture or movie */
+    enum { CACHE_SIZE = 128 };
+    static struct {
+        uint64_t program;
+        uint32_t in_mask;
+        uint16_t cmp_mask;
+        int constant;
+        unsigned mask;
+    } cache[CACHE_SIZE];
+    unsigned slot = (unsigned)(c->vsh ^ (c->vsh >> 32) ^ key->in_mask ^ key->cmp_mask) % CACHE_SIZE;
+    if (cache[slot].program != c->vsh || cache[slot].in_mask != key->in_mask ||
+        cache[slot].cmp_mask != key->cmp_mask) {
+        uint32_t nslots = 0;
+        const uint32_t *tok = prog_find(c->vsh, &nslots);
+        unsigned mask = 0;
+        int constant = tok && !hle_ffhw_is(tok, nslots)
+            ? hle_vsh_perspective_constant(tok, nslots, key, &mask) : -1;
+        cache[slot].program = c->vsh;
+        cache[slot].in_mask = key->in_mask;
+        cache[slot].cmp_mask = key->cmp_mask;
+        cache[slot].constant = constant;
+        cache[slot].mask = mask;
     }
-    const float center = (left + right) * 0.5f;
-    return center < 0.33f ? -1 : center > 0.67f ? 1 : 0;
-}
-
-static bool hud_add_segment(HudSegment *segments, unsigned *used, uint32_t first, uint32_t count,
-                            int anchor)
-{
-    if (*used && segments[*used - 1].anchor == anchor) {
-        segments[*used - 1].count += count;
-    } else if (*used < HUD_MAX_SEGMENTS) {
-        segments[(*used)++] = (HudSegment){ first, count, anchor };
-    } else {
+    const int constant = cache[slot].constant;
+    if (constant < 0 || constant >= HLE_VSH_CONSTANTS) {
         return false;
     }
-    return true;
+    const uint8_t *data = hud_buffer(c->consts_off + (uint32_t)constant * 16, 16, false);
+    if (!data) {
+        return false;
+    }
+    float column[4], magnitude = 0;
+    memcpy(column, data, sizeof(column));
+    for (unsigned i = 0; i < 4; i++) {
+        if (cache[slot].mask & (1u << i)) {
+            magnitude += fabsf(column[i]);
+        }
+    }
+    return isfinite(magnitude) && magnitude > 1e-6f;
 }
 
-static unsigned hud_plan(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfPush *pc,
-                         const VkVertexInputAttributeDescription2EXT *attrs, uint32_t count,
-                         HudSegment *segments, const char **path)
+static bool hud_bounds(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfPush *pc,
+                       const VkVertexInputAttributeDescription2EXT *attrs, uint32_t count,
+                       HleHorplusBox *box, const char **path)
 {
     if (c->count < 3 || c->count > HUD_MAX_VERTICES ||
         (c->prim != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST &&
@@ -3448,19 +3465,19 @@ static unsigned hud_plan(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfP
     }
     const bool affine = screen == 16;
     const uint32_t location = affine ? 0 : (uint32_t)screen;
-    float row[4] = { 1, 0, 0, 0 }, wrow[4] = { 0 };
-    float divisor = 1, scale = 1, translation = 0;
+    float row[2][4] = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 } }, wrow[4] = { 0 };
+    float divisor = 1, scale[2] = { 1, 1 }, translation[2] = { 0 };
     if (nfsu2) {
-        /* Decoded with nv2a_vsh_cpu: dot(v0,c96) * rcc(dot(v0,c99))
-         * * c160.x + c161.x. These uniforms also handle rotating UI quads. */
+        /* Decoded with nv2a_vsh_cpu: dot(v0,c96/c97) * rcc(dot(v0,c99))
+         * * c160.xy + c161.xy. These uniforms also handle rotating UI quads. */
         const uint8_t *constants = hud_buffer(c->consts_off, 162 * 16, false);
         if (!constants) {
             return 0;
         }
         memcpy(row, constants + 96 * 16, sizeof(row));
         memcpy(wrow, constants + 99 * 16, sizeof(wrow));
-        memcpy(&scale, constants + 160 * 16, sizeof(scale));
-        memcpy(&translation, constants + 161 * 16, sizeof(translation));
+        memcpy(scale, constants + 160 * 16, sizeof(scale));
+        memcpy(translation, constants + 161 * 16, sizeof(translation));
         *path = "Underground 2 UI program";
     } else if (affine) {
         float matrix[5][4];
@@ -3479,15 +3496,16 @@ static unsigned hud_plan(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfP
             fabsf(matrix[0][1]) + fabsf(matrix[0][2]) >= 1e-6f) {
             return 0;
         }
-        memcpy(row, matrix[0], sizeof(row));
+        memcpy(row, matrix, sizeof(row));
         divisor = matrix[3][3];
-        translation = matrix[4][0];
+        memcpy(translation, matrix[4], sizeof(translation));
         *path = "affine";
     } else {
         *path = c->vsh ? "screen-space program" : "XYZRHW";
         if (!c->vsh) {
-            row[0] = pc->scr[0];
-            translation = pc->scr[2];
+            row[0][0] = pc->scr[0];
+            row[1][1] = pc->scr[1];
+            memcpy(translation, pc->scr + 2, sizeof(translation));
         }
     }
 
@@ -3539,81 +3557,35 @@ static unsigned hud_plan(const HleCmdDraw *c, bool rhw, bool nfsu2, const HleFfP
         return 0;
     }
 
-    const bool split = c->prim == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST && c->count % 3 == 0;
-    unsigned used = 0;
-    uint32_t start = 0, step = split ? 3 : c->count;
-    float left = INFINITY, right = -INFINITY;
-    for (uint32_t first = 0; first < c->count; first += step) {
-        float lo = INFINITY, hi = -INFINITY;
-        for (uint32_t j = first; j < first + step; j++) {
-            uint16_t index = (uint16_t)j;
-            if (indices) {
-                memcpy(&index, indices + j * sizeof(index), sizeof(index));
-            }
-            float v[4] = { 0, 0, 0, 1 };
-            memcpy(v, vertices + (size_t)index * stride + field, bytes);
-            const float clip_x = v[0] * row[0] + v[1] * row[1] + v[2] * row[2] + v[3] * row[3];
-            if (nfsu2) {
-                divisor = v[0] * wrow[0] + v[1] * wrow[1] + v[2] * wrow[2] + v[3] * wrow[3];
-                if (!isfinite(divisor) || divisor <= 1e-6f) {
-                    return 0;
-                }
-            }
-            const float x = ((clip_x * scale) / divisor + translation) * (pc->vp[0] * 0.5f);
-            if (!isfinite(x) || x < -0.6f || x > 1.6f) {
-                return 0;
-            }
-            lo = MIN(lo, x);
-            hi = MAX(hi, x);
+    *box = (HleHorplusBox){ INFINITY, INFINITY, -INFINITY, -INFINITY };
+    for (uint32_t j = 0; j < c->count; j++) {
+        uint16_t index = (uint16_t)j;
+        if (indices) {
+            memcpy(&index, indices + j * sizeof(index), sizeof(index));
         }
-        if (first && (lo > right + 0.025f || hi < left - 0.025f)) {
-            if (!hud_add_segment(segments, &used, start, first - start, hud_anchor(left, right))) {
-                return 0;
+        float v[4] = { 0, 0, 0, 1 };
+        memcpy(v, vertices + (size_t)index * stride + field, bytes);
+        if (nfsu2) {
+            divisor = v[0] * wrow[0] + v[1] * wrow[1] + v[2] * wrow[2] + v[3] * wrow[3];
+            if (!isfinite(divisor) || divisor <= 1e-6f) {
+                return false;
             }
-            start = first;
-            left = INFINITY;
-            right = -INFINITY;
         }
-        left = MIN(left, lo);
-        right = MAX(right, hi);
-    }
-    if (!hud_add_segment(segments, &used, start, c->count - start, hud_anchor(left, right))) {
-        return 0;
-    }
-    return used == 1 && segments[0].anchor == HUD_UNMODIFIED ? 0 : used;
-}
-
-static void hud_draw(VkCommandBuffer cb, const HleCmdDraw *c, uint32_t vfirst,
-                     HleFfPush *pc, const HudSegment *segments, unsigned count)
-{
-    hle_batch_flush(cb);
-    const bool indexed = c->ib_off != UINT32_MAX;
-    if (indexed && REC_CHANGED(ibuf, g_harena.buf)) {
-        T.vkCmdBindIndexBuffer(cb, g_harena.buf, 0, VK_INDEX_TYPE_UINT16);
-    }
-    for (unsigned i = 0; i < count; i++) {
-        const HudSegment *seg = &segments[i];
-        const bool anchor = seg->anchor != HUD_UNMODIFIED;
-        pc->flags &= ~(HLE_HORPLUS_FLAG | HLE_HUD_ANCHOR_FLAG);
-        pc->flags |= anchor ? HLE_HUD_ANCHOR_FLAG : 0;
-        pc->fog[3] = anchor ? g_hle_horplus_scale : 0.0f;
-        pc->mvp[0] = anchor ? (float)seg->anchor * (1.0f - pc->fog[3]) : 0.0f;
-        if (!g_rec.valid || memcmp(&g_rec.pc, pc, sizeof(*pc))) {
-            g_rec.pc = *pc;
-            if (g_hle_push_ssbo) {
-                push_block(cb, pc);
-            } else {
-                T.vkCmdPushConstants(cb, g_dr.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                     0, sizeof(*pc), pc);
+        float xy[2];
+        for (unsigned axis = 0; axis < 2; axis++) {
+            const float dot = v[0] * row[axis][0] + v[1] * row[axis][1] +
+                v[2] * row[axis][2] + v[3] * row[axis][3];
+            xy[axis] = (dot * scale[axis] / divisor + translation[axis]) * (fabsf(pc->vp[axis]) * 0.5f);
+            if (!isfinite(xy[axis]) || xy[axis] < -0.6f || xy[axis] > 1.6f) {
+                return false;
             }
-            g_dr.emits[EM_PC]++;
         }
-        if (indexed) {
-            T.vkCmdDrawIndexed(cb, seg->count, 1, c->ib_off / 2 + seg->first, (int32_t)vfirst, 0);
-        } else {
-            T.vkCmdDraw(cb, seg->count, 1, vfirst + seg->first, 0);
-        }
+        box->left = MIN(box->left, xy[0]);
+        box->right = MAX(box->right, xy[0]);
+        box->top = MIN(box->top, xy[1]);
+        box->bottom = MAX(box->bottom, xy[1]);
     }
+    return true;
 }
 
 void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, uint32_t ds_id,
@@ -4276,21 +4248,51 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
     /* Target and scaled texture factors in half steps. The shader divides by two. */
     pc.flags |= MIN(rs, 255u) << 16 | MIN(g_hle_rscale, 255u) << 24 |
                 (aax > 1.0f || aay > 1.0f ? HLE_TEXEL_EDGE_FLAG : 0u) | (g_snap_trunc ? HLE_SNAP_TRUNC_FLAG : 0u);
-    /* Leave screen-space draws, depth-only targets and split-screen panes alone.
-     * The programmable shader additionally checks how its position is projected. */
-    if (g_hle_horplus_scale && rt && ds && !rhw && s->rs[RS_ZENABLE] && tw && th &&
+    if (g_hle_horplus_scale && rt && tw && th &&
         (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
         (full || (vpc->x <= 1 && vpc->y <= 1 && vpc->w + 1 >= tw && vpc->h + 1 >= th)) &&
-        (!vpc->clip || (vpc->cx1 <= 1 && vpc->cy1 <= 1 &&
-                        vpc->cx2 >= (int32_t)tw - 1 && vpc->cy2 >= (int32_t)th - 1)) &&
-        (prog || fabsf(pc.mvp[3]) + fabsf(pc.mvp[7]) + fabsf(pc.mvp[11]) >= 1e-6f)) {
-        pc.flags |= HLE_HORPLUS_FLAG;
-        pc.fog[3] = g_hle_horplus_scale;
-        static bool noted_horplus;
-        if (!noted_horplus) {
-            noted_horplus = true;
-            hle_log("hakuX-hle", "widescreen: Hor+ eligible draw on %ux%u (%s)",
-                    tw, th, prog ? "programmable" : "fixed function");
+        (!vpc->clip || (vpc->cx1 <= 1 && vpc->cx2 >= (int32_t)tw - 1))) {
+        const uint64_t frame = hle_back_swap_count() + 1;
+        if (ds && !rhw && s->rs[RS_ZENABLE] &&
+            (!vpc->clip || (vpc->cy1 <= 1 && vpc->cy2 >= (int32_t)th - 1)) &&
+            (prog ? horplus_perspective(c, &k.vk)
+                  : fabsf(pc.mvp[3]) + fabsf(pc.mvp[7]) + fabsf(pc.mvp[11]) >= 1e-6f)) {
+            pc.flags |= HLE_HORPLUS_FLAG;
+            pc.fog[3] = g_hle_horplus_scale;
+            if (s->rs[RS_ZWRITEENABLE]) {
+                g_dr.horplus_world_frame = frame;
+            }
+            static bool noted_horplus;
+            if (!noted_horplus) {
+                noted_horplus = true;
+                hle_log("hakuX-hle", "widescreen: Hor+ eligible draw on %ux%u (%s)",
+                        tw, th, prog ? "programmable" : "fixed function");
+            }
+        } else if ((!s->rs[RS_ZENABLE] || !s->rs[RS_ZWRITEENABLE]) &&
+                   (s->rs[RS_ALPHABLENDENABLE] || s->rs[RS_ALPHATESTENABLE]) &&
+                   rt->horplus_panel_frame != frame && !g_probe.nvsh && !g_hle_gpucut) {
+            const bool nfsu2_hud = c->vsh == nfsu2_hud_program && aax * 640 == tw && aay * 480 == th &&
+                                   !s->rs[RS_ZENABLE] && s->rs[RS_ALPHABLENDENABLE];
+            HleHorplusBox box;
+            const char *path;
+            if (hud_bounds(c, rhw, nfsu2_hud, &pc, ad, na, &box, &path)) {
+                bool panel = false;
+                const int anchor = hle_horplus_anchor(box, g_dr.horplus_world_frame == frame, &panel);
+                if (panel) {
+                    rt->horplus_panel_frame = frame;
+                }
+                if (anchor != HLE_HORPLUS_KEEP) {
+                    pc.flags |= HLE_HUD_ANCHOR_FLAG;
+                    pc.fog[3] = g_hle_horplus_scale;
+                    pc.mvp[0] = (float)anchor * (1.0f - pc.fog[3]);
+                    static unsigned noted;
+                    const unsigned bit = nfsu2_hud ? 8u : !prog ? 1u : path[0] == 'a' ? 2u : 4u;
+                    if (!(noted & bit)) {
+                        noted |= bit;
+                        hle_log("hakuX-hle", "widescreen: HUD anchor on %ux%u (%s)", tw, th, path);
+                    }
+                }
+            }
         }
     }
     if (!g_hvk.caps.bindless) {
@@ -4534,30 +4536,7 @@ void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id, 
         mp.prim = c->prim;
         mp.end = vfirst + c->count;
     }
-    HudSegment hud[HUD_MAX_SEGMENTS];
-    const char *hud_path = NULL;
-    unsigned hud_count = 0;
-    const bool nfsu2_hud = c->vsh == nfsu2_hud_program && aax * 640 == tw && aay * 480 == th &&
-                          !s->rs[RS_ZENABLE] && s->rs[RS_ALPHABLENDENABLE];
-    /* The final 4:3 surface, full viewport and alpha UI only. Skip a pass
-     * writing depth, and preserve horizontal scissors on partial layers. */
-    if (g_hle_horplus_scale && rt && tw && th && (float)tw / th >= 1.25f && (float)tw / th < 1.6f &&
-        (full || (vpc->x <= 1 && vpc->y <= 1 && vpc->w + 1 >= tw && vpc->h + 1 >= th)) &&
-        (!vpc->clip || (vpc->cx1 <= 1 && vpc->cx2 >= (int32_t)tw - 1)) &&
-        (!s->rs[RS_ZENABLE] || !s->rs[RS_ZWRITEENABLE]) &&
-        (s->rs[RS_ALPHABLENDENABLE] || s->rs[RS_ALPHATESTENABLE]) &&
-        !g_probe.nvsh && !g_hle_gpucut) {
-        hud_count = hud_plan(c, rhw, nfsu2_hud, &pc, ad, na, hud, &hud_path);
-    }
-    if (hud_count) {
-        static unsigned noted;
-        const unsigned bit = nfsu2_hud ? 8u : !prog ? 1u : hud_path[0] == 'a' ? 2u : 4u;
-        if (!(noted & bit)) {
-            noted |= bit;
-            hle_log("hakuX-hle", "widescreen: HUD anchor on %ux%u (%s)", tw, th, hud_path);
-        }
-        hud_draw(cb, c, vfirst, &pc, hud, hud_count);
-    } else if (c->ib_off != UINT32_MAX) {
+    if (c->ib_off != UINT32_MAX) {
         /* A strip run still held binds its index buffer as it is recorded,
          * which this draw's own recording would set off after the check
          * below: the draw then read the run's indices. Nightcaster's terrain

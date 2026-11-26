@@ -516,17 +516,45 @@ static void projection_step(ProjectionTrace *trace, const Nv2aVshStep *step)
     }
 }
 
-static const char *perspective_position(const ProjectionTrace *trace, char expression[96])
+static int perspective_divisor(const ProjectionTrace *trace, unsigned *mask)
 {
     const ProjectionValue *pos = trace->reg[12];
     if (pos[3].kind != PROJ_DOT || pos[0].kind != PROJ_DIVIDED || pos[1].kind != PROJ_DIVIDED ||
         pos[0].origin != pos[3].origin || pos[1].origin != pos[3].origin) {
+        return -1;
+    }
+    *mask = pos[3].mask;
+    return (int)pos[3].constant;
+}
+
+int hle_vsh_perspective_constant(const uint32_t *tokens, unsigned nslots, const HleVshKey *key,
+                                 unsigned *mask)
+{
+    ProjectionTrace trace = { .in_mask = key->in_mask, .cmp_mask = key->cmp_mask, .next_origin = 64 };
+    for (unsigned s = 0; s < nslots && s < HLE_VSH_MAX_SLOTS; s++) {
+        Nv2aVshStep step = { 0 };
+        if (nv2a_vsh_parse_step(&step, tokens + 4 * s) != NV2AVPR_SUCCESS) {
+            break;
+        }
+        projection_step(&trace, &step);
+        if (step.is_final) {
+            return perspective_divisor(&trace, mask);
+        }
+    }
+    return -1;
+}
+
+static const char *perspective_position(const ProjectionTrace *trace, char expression[96])
+{
+    unsigned mask;
+    const int constant = perspective_divisor(trace, &mask);
+    if (constant < 0) {
         return NULL;
     }
     /* The same vertex program can draw UI with an affine matrix. Check the
      * coefficients once per invocation, independently of the vertex's W. */
-    snprintf(expression, 96, "dot(abs(c[%u]), vec4(%u.0,%u.0,%u.0,%u.0)) > 1e-6", pos[3].constant,
-             pos[3].mask & 1u, (pos[3].mask >> 1) & 1u, (pos[3].mask >> 2) & 1u, (pos[3].mask >> 3) & 1u);
+    snprintf(expression, 96, "dot(abs(c[%d]), vec4(%u.0,%u.0,%u.0,%u.0)) > 1e-6", constant,
+             mask & 1u, (mask >> 1) & 1u, (mask >> 2) & 1u, (mask >> 3) & 1u);
     return expression;
 }
 
