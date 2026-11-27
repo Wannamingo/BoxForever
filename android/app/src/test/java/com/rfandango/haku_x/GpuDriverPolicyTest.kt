@@ -101,6 +101,15 @@ class GpuDriverPolicyTest {
     assertTrue(GpuDriverPolicy.isRg477m("GammaOS Full", "RG477M"))
   }
 
+  @Test fun retiringBundledDriversDoesNotRemoveImportedOrCurrentDrivers() {
+    val current = setOf("bundled:malisx2:0.6.1:9fbc7da290", "bundled:unified:0.5.1:c4d156249788")
+    assertTrue(GpuDriverPolicy.isRetiredBundle("bundled:malisx2-0.2.3", current))
+    assertTrue(GpuDriverPolicy.isRetiredBundle("bundled:unified:0.4.64:c21803796bdb", current))
+    for (marker in current + listOf("MaliSX2-0.2.3.zip", "Turnip.zip", "")) {
+      assertFalse(marker, GpuDriverPolicy.isRetiredBundle(marker, current))
+    }
+  }
+
   @Test fun manualLibrariesAreNotRestrictedToOneGpuVendor() {
     for (name in listOf("libvulkan_malisx2.so", "libvulkan_freedreno.so", "libvulkan_custom.so"))
       assertTrue(name, GpuDriverPolicy.acceptsLibrary(name))

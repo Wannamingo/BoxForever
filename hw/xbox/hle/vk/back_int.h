@@ -78,6 +78,7 @@ typedef struct HleVkSurf {
     /* asynchronous pipeline builds (vk/draw.c target_note): the last swap a
      * draw targeted it and the one before (swap count + 1, 0: never) */
     uint64_t drawn_cur, drawn_prev;
+    uint64_t horplus_world_frame; /* swap count + 1 of the expanded scene carried by this surface */
     uint64_t horplus_layout_frame; /* swap count + 1 that owns horplus_layout */
     HleHorplusLayout horplus_layout;
 } HleVkSurf;
@@ -158,7 +159,7 @@ void hle_draw_cmd_state(const HleCmdState *s);
 void hle_draw_cmd_state_part(const HleCmdStatePart *p);
 void hle_draw_cmd_tex(const HleCmdTex *c, VkCommandBuffer cb);
 void hle_draw_cmd_draw(const HleCmdDraw *c, VkCommandBuffer cb, uint32_t rt_id,
-                       uint32_t ds_id, const HleCmdViewport *vp);
+                       uint32_t ds_id, const HleCmdViewport *vp, uint32_t display_w, uint32_t display_h);
 /* A recording starts (back.c cb_get, outside any pass). */
 void hle_draw_rec_begin(VkCommandBuffer cb);
 /* It is frame slot's (its last submission has completed): the per-slot push
@@ -233,6 +234,7 @@ typedef struct HleDispFrame {
     VkImage img;
     VkImageView view;
     uint32_t signal_w, signal_h; /* guest dimensions before render/DRS scaling */
+    bool horplus;               /* this slot holds a frame with expanded perspective */
 } HleDispFrame;
 bool hle_disp_acquire(HleDispFrame *f);
 /* The slots' generation (made again at a resize): inside use_begin/end. */

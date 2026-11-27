@@ -149,7 +149,7 @@ static void test_horplus_projection(void)
     HT_CHECK(hle_vsh_glsl(&hud[0][0], 2, &key, buf, sizeof(buf)) > 0);
     HT_CHECK(strstr(buf, widen) == NULL);
     HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 2), 0);
-    HT_CHECK(strstr(buf, "ndc.x = ndc.x * pc.fog.w + pc.mvp[0][0]") != NULL);
+    HT_CHECK(strstr(buf, "ndc.x = ndc.x * pc.fog.w + dx") != NULL);
     dump("vsh_horplus_hud");
     HT_EQ_INT(hle_vsh_screen_input(&camera[0][0], 3), -1);
     HT_EQ_INT(hle_vsh_screen_input(&hud[0][0], 1), -1);
@@ -196,6 +196,41 @@ static void test_horplus_overlay_layout(void)
     HT_EQ_INT(hle_horplus_anchor(adjacent, true, 6, &layout), HLE_HORPLUS_KEEP);
     HT_CHECK(layout.tiled_panel);
     HT_EQ_INT(hle_horplus_anchor(left, true, 4, &layout), HLE_HORPLUS_KEEP);
+
+    HleHorplusBands bands = { 0 };
+    float cuts[2];
+    int anchors[3];
+    hle_horplus_triangle(&bands, 0.04f, 0.20f);
+    hle_horplus_triangle(&bands, 0.75f, 0.91f);
+    HT_CHECK(hle_horplus_split(&bands, cuts, anchors));
+    HT_EQ_INT(anchors[0], HLE_HORPLUS_LEFT);
+    HT_EQ_INT(anchors[1], HLE_HORPLUS_RIGHT);
+    HT_CHECK(cuts[0] > 0.20f && cuts[0] < 0.75f);
+    hle_horplus_triangle(&bands, 0.17f, 0.79f);
+    HT_CHECK(!hle_horplus_split(&bands, cuts, anchors));
+}
+
+static void test_horplus_projection_with_vertex_offset(void)
+{
+    /* Final screen X/Y use reciprocal W plus a normal-dependent offset. */
+    static const uint32_t program[][4] = {
+        { 0, 0x0086001b, 0x09fe1868, 0x3e200ff8 },
+        { 0, 0x00a1281b, 0x0836186c, 0x28300ff8 },
+        { 0, 0x00c1801b, 0x2436186c, 0x20708800 },
+        { 0, 0x00c1a01b, 0x2436186c, 0x20704800 },
+        { 0, 0x00c1c01b, 0x2436186c, 0x20702800 },
+        { 0, 0x00c1e01b, 0x2436186c, 0x20701800 },
+        { 0, 0x00c2081b, 0x0836186c, 0x21400ff8 },
+        { 0, 0x02a1481b, 0x08361bff, 0x1430882c },
+        { 0, 0x0647401b, 0xc4361bff, 0x1018e800 },
+        { 0, 0x00c2281b, 0x0836186c, 0x28400ff8 },
+        { 0, 0x0087601b, 0xc400286c, 0x3070e800 },
+        { 0, 0x0086a015, 0x0c2a6857, 0x1070c801 },
+    };
+    const HleVshKey key = { .in_mask = 1u | 1u << 4 };
+    unsigned mask = 0;
+    HT_EQ_INT(hle_vsh_perspective_constant(program[0], sizeof(program) / sizeof(*program), &key, &mask), 15);
+    HT_EQ_INT(mask, 7);
 }
 
 int main(void)
@@ -207,6 +242,7 @@ int main(void)
     HT_RUN(test_unwritten_fog);
     HT_RUN(test_overflow);
     HT_RUN(test_horplus_projection);
+    HT_RUN(test_horplus_projection_with_vertex_offset);
     HT_RUN(test_horplus_overlay_layout);
     HT_DONE();
 }

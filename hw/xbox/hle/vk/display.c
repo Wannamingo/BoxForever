@@ -18,7 +18,7 @@ typedef struct HleDispSlot {
     VkImageView view;
     VkDeviceMemory mem;
     int state;
-    bool held;
+    bool held, horplus;
     uint32_t swap_id;
     uint64_t value;
 } HleDispSlot;
@@ -230,7 +230,7 @@ static void to_front(int i, uint32_t swap_id)
     hle_hitch_frame(swap_id, HLE_FR_FRONT);
 }
 
-int hle_disp_begin_write(uint32_t swap_id, uint64_t value)
+int hle_disp_begin_write(uint32_t swap_id, uint64_t value, bool horplus)
 {
     static unsigned s_none;
     hle_mutex_lock(&g_disp.lock);
@@ -289,6 +289,7 @@ int hle_disp_begin_write(uint32_t swap_id, uint64_t value)
         HleDispSlot *s = &g_disp.s[pick];
         s->state = SLOT_PENDING;          /* reserved: nobody else picks it */
         s->swap_id = swap_id;
+        s->horplus = horplus;
         hle_hitch_frame(swap_id, HLE_FR_WRITE);
         s->value = value;
         g_disp.st.written++;
@@ -366,7 +367,8 @@ bool hle_disp_acquire(HleDispFrame *f)
                 shown = s_last_shown;
             }
             s->held = true;
-            *f = (HleDispFrame){ i, g_disp.gen, s->swap_id, g_disp.w, g_disp.h, s->value, s->img, s->view, g_disp.signal_w, g_disp.signal_h };
+            *f = (HleDispFrame){ i, g_disp.gen, s->swap_id, g_disp.w, g_disp.h, s->value,
+                                 s->img, s->view, g_disp.signal_w, g_disp.signal_h, s->horplus };
             found = true;
             break;
         }

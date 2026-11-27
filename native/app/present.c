@@ -49,7 +49,7 @@ float nc_aspect_ratio(NcAspect mode)
 }
 
 static NcAspect g_aspect = NC_ASPECT_AUTO;
-static bool g_widescreen;
+static bool g_widescreen, g_horplus;
 static bool g_fxaa;
 static int g_upscale = NC_UPSCALE_BILINEAR;
 static bool g_shown;
@@ -158,6 +158,11 @@ void nc_present_set_aspect(NcAspect mode)
     g_aspect = mode;
 }
 
+void nc_present_set_horplus(bool on)
+{
+    g_horplus = on;
+}
+
 void nc_present_set_widescreen(bool on)
 {
     g_widescreen = on;
@@ -222,11 +227,13 @@ static void debug_poll(void)
 }
 
 /* The frame's half size in the window (clip space), fitted to the chosen ratio. */
-static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, float *sx, float *sy)
+static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, bool expanded, float *sx, float *sy)
 {
     const float wa = (float)ww / (float)wh;
-    float fa = nc_aspect_ratio(g_aspect);
-    switch (g_aspect) {
+    const bool sd = (float)fw / (float)fh < 1.6f;
+    const NcAspect aspect = g_horplus && !expanded ? (sd ? NC_ASPECT_4_3 : NC_ASPECT_AUTO) : g_aspect;
+    float fa = nc_aspect_ratio(aspect);
+    switch (aspect) {
     case NC_ASPECT_STRETCH:
         fa = wa;
         break;
@@ -234,7 +241,7 @@ static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, float *sx,
         fa = (float)fw / (float)fh;
         /* A standard-definition frame (640x480, 720x480: under 16:10) from a
          * console set to widescreen is anamorphic 16:9. */
-        if (g_widescreen && fa < 1.6f) {
+        if (g_widescreen && sd) {
             fa = nc_aspect_ratio(NC_ASPECT_16_9);
         }
         break;
@@ -254,11 +261,11 @@ static void place(uint32_t fw, uint32_t fh, uint32_t ww, uint32_t wh, float *sx,
     static uint64_t last_frame, last_window;
     static int last_mode = -1;
     const uint64_t frame = (uint64_t)fw << 32 | fh, window = (uint64_t)ww << 32 | wh;
-    const int mode = g_aspect * 2 + g_widescreen + (g_movie_w ? (g_movie_w*4096+g_movie_h)*16:0);
+    const int mode = aspect * 2 + g_widescreen + (g_movie_w ? (g_movie_w*4096+g_movie_h)*16:0);
     if (frame != last_frame || window != last_window || mode != last_mode) {
         const uint32_t vw = (uint32_t)(ww * *sx + 0.5f), vh = (uint32_t)(wh * *sy + 0.5f);
         nc_log("hakuX-app", "present layout: aspect=%s frame=%ux%u window=%ux%u viewport=%ux%u offset=%u,%u",
-               aspect_modes[g_aspect].name, fw, fh, ww, wh, vw, vh, (ww - vw) / 2, (wh - vh) / 2);
+               aspect_modes[aspect].name, fw, fh, ww, wh, vw, vh, (ww - vw) / 2, (wh - vh) / 2);
         last_frame = frame;
         last_window = window;
         last_mode = mode;
@@ -304,8 +311,9 @@ bool nc_present_frame(struct ANativeWindow *win)
     }
     nc_dev_nv2a_display_pickup(now_ns()); /* the vblank keeps clear of it */
     float sx = 1.0f, sy = 1.0f;
-    if (hle_present_frame(&fw, &fh)) {
-        place(fw, fh, ww, wh, &sx, &sy);
+    bool expanded = false;
+    if (hle_present_frame(&fw, &fh, &expanded)) {
+        place(fw, fh, ww, wh, expanded, &sx, &sy);
         __atomic_store_n(&g_shown, true, __ATOMIC_RELAXED);
     }
     hle_present_end(sx, sy, fxaa, upscale, g_dbg.average, key);

@@ -80,15 +80,6 @@ fun GpuDriverScreen(onBack: () -> Unit, vm: GpuDriverViewModel = viewModel()) {
           )
           Hint(stringResource(R.string.gpu_driver_chip_auto_desc))
         }
-        if (GpuDriverHelper.isMaliSX2Device()) Hint(stringResource(
-          when {
-            GpuDriverHelper.detectedChip() == GpuDriverPolicy.Chip.UNISOC_T618 -> R.string.gpu_driver_malisx2_t618
-            GpuDriverHelper.isUnisocT820() -> R.string.gpu_driver_malisx2_t820
-            GpuDriverHelper.isDimensity8300() || GpuDriverHelper.isRg477mMali() -> R.string.gpu_driver_malisx2_d8300
-            GpuDriverHelper.isRgVitaPro() -> R.string.gpu_driver_malisx2_vita
-            else -> R.string.gpu_driver_malisx2
-          },
-        ))
         Section(stringResource(R.string.gpu_driver_section))
         DriverRow(
           title = stringResource(R.string.gpu_driver_system_choice),
@@ -110,8 +101,7 @@ fun GpuDriverScreen(onBack: () -> Unit, vm: GpuDriverViewModel = viewModel()) {
         }
         for (d in s.drivers) {
           DriverRow(
-            title = if (d.path?.let { GpuDriverHelper.isUnifiedDriver(java.io.File(it)) } == true)
-              "Unified P48r1" else GpuDriverViewModel.label(d),
+            title = GpuDriverViewModel.label(d),
             detail = listOfNotNull(
               if (d.path?.let { GpuDriverHelper.isBundledDriver(java.io.File(it)) } == true)
                 stringResource(R.string.gpu_driver_bundled) else null,

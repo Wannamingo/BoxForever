@@ -25,6 +25,7 @@ typedef enum NcAspect {
 NcAspect nc_aspect_parse(const char *name);
 float nc_aspect_ratio(NcAspect mode); /* zero for automatic or stretched output */
 void nc_present_set_aspect(NcAspect mode);
+void nc_present_set_horplus(bool on);
 void nc_present_set_movie(int mode); /* 0 original,1 4:3,2 16:9,3 source aspect */
 bool nc_present_toggle_movie(void);  /* manual override for unrecognized/in-engine scenes */
 /* The console is set to widescreen: auto shows a 4:3-sized frame as 16:9

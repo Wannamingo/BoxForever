@@ -1745,6 +1745,9 @@ static void cmd_clear(const HleCmdClear *c)
     if (!flags) {
         return;
     }
+    if ((flags & HLE_CLEAR_TARGET) == HLE_CLEAR_TARGET && !c->nrects) {
+        rt->horplus_world_frame = 0;
+    }
     if ((flags & HLE_CLEAR_TARGET) && (flags & HLE_CLEAR_TARGET) != HLE_CLEAR_TARGET) {
         /* a channel subset: drawn through the write mask, the rest as usual */
         uint32_t rest = flags & ~HLE_CLEAR_TARGET;
@@ -2219,7 +2222,8 @@ static void cmd_swap_present(const HleCmdSwap *c)
     hle_pcache_save(false);
     hle_pipe_flush(false);              /* the pipelines made, recorded (at most once a second) */
     HleVkSurf *src = hle_surf_get(c->surf);
-    int slot = hle_disp_begin_write(c->swap_id, c->value);
+    const bool horplus = src && src->horplus_world_frame == g_back.st.swaps + 1 && !g_ovl.on;
+    int slot = hle_disp_begin_write(c->swap_id, c->value, horplus);
     if (src && slot >= 0 && hle_surf_ensure(src) &&
         (src->aspect & VK_IMAGE_ASPECT_COLOR_BIT)) {
         VkCommandBuffer cb = cb_get();
@@ -2422,6 +2426,7 @@ static void cmd_copy(const HleCmdCopy *c)
     VkImageSubresourceLayers ds = { d->aspect, d->d.parent ? d->d.level : 0,
                                     d->d.parent ? d->d.face : 0, 1 };
     if (c->resolve) {
+        d->horplus_world_frame = s->horplus_world_frame;
         /* a copy swap's downsample of the multisampled buffer into the back
          * buffer (present.c): the whole image, filtered */
         VkImageBlit2 rb = {
@@ -2475,6 +2480,12 @@ static void cmd_copy(const HleCmdCopy *c)
     }
     if (!n) {
         return;
+    }
+    if (n == 1 && cr[0].dstOffset.x == 0 && cr[0].dstOffset.y == 0 &&
+        br[0].dstOffsets[1].x == (int32_t)d->w && br[0].dstOffsets[1].y == (int32_t)d->h &&
+        cr[0].srcOffset.x == 0 && cr[0].srcOffset.y == 0 &&
+        br[0].srcOffsets[1].x == (int32_t)s->w && br[0].srcOffsets[1].y == (int32_t)s->h) {
+        d->horplus_world_frame = s->horplus_world_frame;
     }
     VkCommandBuffer cb = cb_get();
     hle_surf_transition(cb, s, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -2785,7 +2796,8 @@ static void dispatch(const HleCmdHdr *h)
                 g_pt.fb++;
             }
             g_hle_zeq = zv ? zq : 0;
-            hle_draw_cmd_draw(p, g_back.fr[g_back.cur].cb, g_back.rt, g_back.ds, &g_back.vp);
+            hle_draw_cmd_draw(p, g_back.fr[g_back.cur].cb, g_back.rt, g_back.ds, &g_back.vp,
+                              g_back.disp_w, g_back.disp_h);
             if(__atomic_load_n(&g_dynamic_config,__ATOMIC_ACQUIRE))g_dynamic_scene_draws+=hle_draw_scene3d(p);
             if(hle_back_movie_tracking_on()) {
                 g_movie_scene_draws+=hle_draw_scene3d(p);

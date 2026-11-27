@@ -47,9 +47,7 @@
   <string name="settings_gpu_driver_active_version">%1$s (%2$s)</string>
   <string name="settings_gpu_driver_not_supported">Системный драйвер. Пользовательские драйверы доступны для Adreno, а также для RG477M / Dimensity 8300 с MaliSX2.</string>
   <string name="gpu_driver_desc">На любом устройстве можно выбрать системный или любой встроенный драйвер либо импортировать ZIP. Фактическая совместимость зависит от GPU, прошивки и версии Android. Изменение применяется при следующем запуске игры.</string>
-  <string name="gpu_driver_malisx2">MaliSX2 встроен для RG477M / Dimensity 8300 (MT6897, Mali-G615). На RG477M с Android 14+ доступны Unified P48r1 и M2+DS1; официальный 0.2.3 сохранён для отката. Новая установка выбирает прежний встроенный пакет, обновление сохраняет ваш выбор. Начните с разрешения 1×. После смены драйвера полностью перезапустите приложение и игру.</string>
   <string name="gpu_driver_bundled">Встроен в приложение. Отдельная загрузка или импорт не требуются.</string>
-  <string name="gpu_driver_malisx2_vita">Экспериментальная поддержка RG VITA Pro (RK3576, Mali-G52). MaliSX2 0.2.3 встроен; для сравнения можно выбрать системный драйвер. Начните с разрешения 1×. После смены драйвера перезапустите игру.</string>
   <string name="gpu_driver_section">Драйверы</string>
   <string name="gpu_driver_system_choice">Системный драйвер</string>
   <string name="gpu_driver_system_desc">Драйвер из прошивки устройства</string>

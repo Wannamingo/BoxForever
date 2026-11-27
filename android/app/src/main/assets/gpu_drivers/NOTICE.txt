@@ -1,49 +1,11 @@
-MaliSX2 0.2.3, source b85d5f7f366994a403fcc14bc6a0813c3fde628f
+MaliSX2 0.6.1 for Android ARM64, source 9fbc7da2900938df9d078f0ed0afa1e58a779c48.
 Copyright (c) 2026 ARMSX2 and bmdhacks. MIT license: MaliSX2-LICENSE.txt.
-Official, unmodified driver archive: https://github.com/bmdhacks/malisx2/releases/tag/v0.2.3
-Source: https://github.com/bmdhacks/malisx2/tree/b85d5f7f366994a403fcc14bc6a0813c3fde628f
-Mesa components retain their original licenses and copyright notices.
-Mesa snapshot used by the pinned MaliSX2 source: db9bce6c3d36570ef996a898f53cbcde08db39e8.
-Its license texts are included under mesa-licenses/; individual components retain their original terms.
+Official, unmodified driver archive: https://github.com/bmdhacks/malisx2/releases/tag/v0.6.1
+Source: https://github.com/bmdhacks/malisx2/tree/9fbc7da2900938df9d078f0ed0afa1e58a779c48
+Mesa source: https://github.com/bmdhacks/armsx2-turnip/tree/b5f8787e44083b4840f605b595e79fcf61077175
+Mesa components retain their original licenses in mesa-licenses/ and copyright notices.
 
-Additional locally modified bundle: MaliSX2 0.2.3 Unified M2+DS1 (RG477M, Android 14+).
-Library SHA-256: b05da0faba919d2310ed8f22af0fa6a7632d25d9fc69278659c554b76757dfa1.
-Runtime identifier: unified-m2-ds.s2685180360ae.
-Includes the Unified M1/M2 and DS1 patches; this is not the unmodified official archive.
-Original copyright and license terms are retained. Provenance and test scope are in the bundle.
-Qualified on RG477M/Mali-G615; the official 0.2.3 bundle remains available for rollback and other devices.
-
-Additional bundle: Unified P48r1, RG476H Android 13+/API33 and RG477M Android 14+/API34.
-Library SHA-256: 71e520f9de773d23700b2a5e48e6960dbd588d791b3e6b0ef31f77b5d17330df.
-Legacy package, now visible in the unrestricted manual catalogue. Existing explicit choices and legacy defaults retained.
-Exact default-mode qualification: 149 CTS cases, 24 native processes / 34746 checks / 314 explicit GPU cases,
-plus Syberia intro/main-menu app smoke on the two listed consoles. Not full Vulkan conformance or an FPS benchmark.
-Driver source: release attachment Unified-P48r1-driver-source.zip; exact Mesa source: Mesa-exact-source-export-2026-11-04.zip.
-Original notices and licenses are also inside the driver bundle.
-
-Additional testing bundle: Unified P77r1, Android 12+/API31, ARM64.
-Library SHA-256: 53d01a562e504782154a5cddbcc55bcd079f2038260bca08ea6885d835562006.
-Exact native/API qualification on RG477M/G615, RG476H/G57 and RG Rotate/G52.
-Selected MaliSX2 0.3.3 backports, linear descriptor pools, attachment LOAD,
-AFBC targets and 3D blit fixes. Unsupported BC formats are not advertised.
-This is a testing release: no new game FPS or long-session stability claim.
-The separate G615 RGB_EXTERNAL AHB test does not enable this private flag in the app.
-G615 advertises experimental Vulkan 1.4 by default; no full 1.4 conformance is claimed.
-G52/G57 remain at Vulkan 1.1; public AHB is not enabled on those architectures.
-All devices can manually select/import packages; actual GPU/kernel/Android compatibility still applies.
-The three earlier packages and automatic-choice policy are retained unchanged.
-Source, provenance, qualification matrix and original licenses are included in the driver ZIP.
-
-Additional testing bundle: Unified 0.4.50, Android 12+/API31, ARM64.
-Library SHA-256: 68d30c7ca6c5deca4ac047c304874ef0072cc455c692549ca7c42622f428b25a.
-The archive includes the driver patch, build provenance, and license notices.
-Available as a manual choice alongside the earlier bundled drivers.
-
-Unified 0.4.53, Android 12+/API31, ARM64.
-Source and original archive: https://github.com/Wannamingo/Unified/releases/tag/v0.4.53
-Source revision: 7e90a2459b77b6e6968e28c226e8bb50efc1f126.
-Library SHA-256: e4627c2637e536b04c9614b8f9638fbcec645c383a4c8147593cfa31fc7341be.
-Original notices and license texts are inside the archive.
-
-Unified 0.4.64 AFBC for Android API 31 and later
-Source and releases: https://github.com/Wannamingo/Unified
+Unified 0.5.1 G52 Border Lab for Android ARM64.
+Official archive: https://github.com/Wannamingo/Unified/releases/tag/v0.5.1
+Source: https://github.com/Wannamingo/Unified/tree/v0.5.1
+Original notices, license texts and source patches are inside the archive.

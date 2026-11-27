@@ -409,7 +409,7 @@ class NativeCoreActivity : SDLActivity(), InputManager.InputDeviceListener {
     }
     if (!driverLib.isNullOrEmpty()) {
       android.util.Log.i("hakuX-app", "GPU driver package: " +
-        if (GpuDriverHelper.isBundledInUse()) "bundled MaliSX2 0.2.3" else "imported")
+        if (GpuDriverHelper.isBundledInUse()) "bundled" else "imported")
       args += "vkdriver=${GpuDriverHelper.driverInstallDir}|$driverLib|${GpuDriverHelper.hookLibDir}"
     }
     return args.toTypedArray()

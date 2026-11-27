@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-  <string name="gpu_driver_malisx2_rg476h">RG476H (Unisoc T820, Mali-G57): o pacote Unified P48r1 está disponível no Android 13+. O driver do sistema e MaliSX2 0.2.3 permanecem disponíveis. Instalações recentes usam o driver do sistema; as atualizações mantêm sua seleção. Comece com 1×  de resolução. Reiniciar totalmente o aplicativo e o jogo após a mudança de drivers.</string>
-</resources>

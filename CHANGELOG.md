@@ -1,5 +1,12 @@
 # Changelog
 
+## BoxForever 1.0.6
+
+- Bundle MaliSX2 0.6.1 and Unified 0.5.1. List both drivers, System Vulkan, and ZIP import on every model.
+- Switch to System Vulkan when the selected bundled driver has been removed.
+- Improve Hor+ HUD placement and present frames in their original proportions when no suitable 3D view is detected.
+- [Русский](releases/1.0.6.ru.md) · [English](releases/1.0.6.en.md)
+
 ## BoxForever 1.0.5 — 2026-11-26
 
 - Preserve white borders when rendering Conker's RGB565 shadow textures without formatless custom Vulkan border colors.

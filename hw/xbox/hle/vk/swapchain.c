@@ -1101,7 +1101,7 @@ bool hle_present_begin(struct ANativeWindow *win, uint32_t *w, uint32_t *h)
     return true;
 }
 
-bool hle_present_frame(uint32_t *w, uint32_t *h)
+bool hle_present_frame(uint32_t *w, uint32_t *h, bool *horplus)
 {
     hle_disp_use_begin();               /* the slots' images stay until the submit */
     g_ps.using = true;
@@ -1122,6 +1122,7 @@ bool hle_present_frame(uint32_t *w, uint32_t *h)
     if (g_ps.have) {
         *w = g_ps.f.w;
         *h = g_ps.f.h;
+        *horplus = g_ps.f.horplus;
     }
     return g_ps.have;
 }

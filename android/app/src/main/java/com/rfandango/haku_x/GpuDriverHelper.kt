@@ -24,39 +24,27 @@ object GpuDriverHelper {
   private const val META_JSON = "meta.json"
   /** In driverInstallDir: the file name of the package the driver came from. */
   private const val PACKAGE_MARKER = ".hakux_package"
-  const val BUNDLED_FILE = "hakux-bundled-malisx2-0.2.3.zip"
-  private const val BUNDLED_ASSET = "gpu_drivers/malisx2-0.2.3-b85d5f7f36.zip"
-  private const val BUNDLED_SHA256 = "133c35a49c4197e9177969e69e4dba41ea2433598810277b4f37597c8751a78f"
-  private const val BUNDLED_MARKER = "bundled:malisx2-0.2.3"
-  private const val COMBINED_FILE = "hakux-bundled-malisx2-m2-ds1-b05da0fa.zip"
-  private const val COMBINED_ASSET = "gpu_drivers/malisx2-0.2.3-m2-ds1-b05da0fa.zip"
-  private const val COMBINED_SHA256 = "b12a5d95e2ea6c9b5e4f4d39d7e8ed5baceeba1a3a9fe8e45261abfa45deef61"
-  private const val COMBINED_MARKER = "bundled:malisx2-0.2.3:m2-ds1:b05da0fa"
-  private const val UNIFIED_FILE = "hakux-bundled-unified-p48r1-hakux-common-71e520f9.zip"
-  private const val UNIFIED_ASSET = "gpu_drivers/Unified-P48r1-HakuX-common-71e520f9.zip"
-  private const val UNIFIED_SHA256 = "c921fd6507a590f95e2f253a7d9f446a4335db0356ccdd7346c85722d5a0d1ff"
-  private const val UNIFIED_MARKER = "bundled:unified:P48r1:71e520f9de77"
-  private const val RELEASE_UNIFIED_FILE = "hakux-bundled-unified-p77r1-api31-53d01a56.zip"
-  private const val RELEASE_UNIFIED_ASSET = "gpu_drivers/Unified-P77r1-API31-53d01a56.zip"
-  private const val RELEASE_UNIFIED_SHA256 = "db99c64ae9ffc434aa43da3069a9b39358b08a1cdfc6f82a012a983c9b0d78c2"
-  private const val RELEASE_UNIFIED_MARKER = "bundled:unified:P77r1:53d01a562e50"
-  private const val UNIFIED_0450_FILE = "hakux-bundled-unified-0.4.50-api31-68d30c7c.zip"
-  private const val UNIFIED_0450_ASSET = "gpu_drivers/Unified-0.4.50-API31-68d30c7c.zip"
-  private const val UNIFIED_0450_SHA256 = "d57fa9ba3386bced985dfe307abd792ab9f18277b78044143e867c43e77bf5be"
-  private const val UNIFIED_0450_MARKER = "bundled:unified:0.4.50:68d30c7ca6c5"
-  private const val UNIFIED_0453_FILE = "hakux-bundled-unified-0.4.53-api31-e4627c26.zip"
-  private const val UNIFIED_0453_ASSET = "gpu_drivers/Unified-0.4.53-Android-API31.zip"
-  private const val UNIFIED_0453_SHA256 = "afe335c6b948115d64fc7cf4c8b1d8280adb348bd1e6d2a06a5e8d0ce19ecfda"
-  private const val UNIFIED_0453_MARKER = "bundled:unified:0.4.53:e4627c2637e5"
-  private const val UNIFIED_0464_FILE = "hakux-bundled-unified-0.4.64-api31.zip"
-  private const val UNIFIED_051_FILE = "hakux-bundled-unified-0.5.1-api31.zip"
-  private const val UNIFIED_0464_ASSET = "gpu_drivers/Unified-0.4.64-AFBC-Android-API31.zip"
-  private const val UNIFIED_051_ASSET = "gpu_drivers/Unified-0.5.1-G52-Border-Lab.zip"
-  private const val UNIFIED_0464_SHA256 = "bdc0c390c83005216cbff9bf9096146d7ba62cd239481867207d61cb46a1ccc0"
-  private const val UNIFIED_051_SHA256 = "6bea07de12cf0ee325987525461d692a5cb738d322a69c7fcc906e4557a3ae35"
-  private const val UNIFIED_0464_MARKER = "bundled:unified:0.4.64:c21803796bdb"
-  private const val UNIFIED_051_MARKER = "bundled:unified:0.5.1:c4d156249788"
+  private const val MALISX2_MARKER = "bundled:malisx2:0.6.1:9fbc7da290"
+  private const val UNIFIED_MARKER = "bundled:unified:0.5.1:c4d156249788"
   private const val BOOTSTRAPPED = "bundled_malisx2_bootstrapped"
+
+  private data class BundledDriver(val archive: String, val localName: String, val sha256: String, val marker: String) {
+    val file: File get() = File(appContext.filesDir, "bundled_drivers/$localName")
+  }
+
+  private val maliSX2 = BundledDriver(
+    "malisx2-0.6.1-9fbc7da290.zip",
+    "hakux-bundled-malisx2-0.6.1.zip",
+    "1fbdb5dee1217d0f97190a60844f83c4504567c8c6bc6399b5a8843840e99206",
+    MALISX2_MARKER,
+  )
+  private val unified = BundledDriver(
+    "Unified-0.5.1-G52-Border-Lab.zip",
+    "hakux-bundled-unified-0.5.1-api31.zip",
+    "6bea07de12cf0ee325987525461d692a5cb738d322a69c7fcc906e4557a3ae35",
+    UNIFIED_MARKER,
+  )
+  private val bundles = listOf(maliSX2, unified)
   private var bundledPrepared = false
 
   private lateinit var appContext: Context
@@ -73,71 +61,58 @@ object GpuDriverHelper {
     if (!bundledPrepared) bundledPrepared = prepareBundledDriver()
   }
 
-  private val bundledFile: File get() = File(appContext.filesDir, "bundled_drivers/$BUNDLED_FILE")
-  private val combinedFile: File get() = File(appContext.filesDir, "bundled_drivers/$COMBINED_FILE")
-  private val unifiedFile: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_FILE")
-  private val releaseUnifiedFile: File get() = File(appContext.filesDir, "bundled_drivers/$RELEASE_UNIFIED_FILE")
-  private val unified0450File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0450_FILE")
-  private val unified0453File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0453_FILE")
-  private val unified0464File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_0464_FILE")
-  private val unified051File: File get() = File(appContext.filesDir, "bundled_drivers/$UNIFIED_051_FILE")
-  // Every asset is visible on every device. Detection only chooses the historical default.
-  private val bundledFiles: List<File> get() =
-    listOf(combinedFile, bundledFile, unifiedFile, releaseUnifiedFile, unified0450File, unified0453File, unified0464File, unified051File)
-  private val automaticCandidates: List<File> get() =
-    if (rg477mMali) listOf(combinedFile, bundledFile, unifiedFile) else listOf(bundledFile)
   private val choices get() = appContext.getSharedPreferences("gpu_driver_choices", Context.MODE_PRIVATE)
 
   private fun prepareBundledDriver(): Boolean {
     return try {
-      BundledDriverArchive.ensure(bundledFile, BUNDLED_SHA256) { appContext.assets.open(BUNDLED_ASSET) }
-      BundledDriverArchive.ensure(combinedFile, COMBINED_SHA256) { appContext.assets.open(COMBINED_ASSET) }
-      BundledDriverArchive.ensure(unifiedFile, UNIFIED_SHA256) { appContext.assets.open(UNIFIED_ASSET) }
-      BundledDriverArchive.ensure(releaseUnifiedFile, RELEASE_UNIFIED_SHA256) { appContext.assets.open(RELEASE_UNIFIED_ASSET) }
-      BundledDriverArchive.ensure(unified0450File, UNIFIED_0450_SHA256) { appContext.assets.open(UNIFIED_0450_ASSET) }
-      BundledDriverArchive.ensure(unified0453File, UNIFIED_0453_SHA256) { appContext.assets.open(UNIFIED_0453_ASSET) }
-      BundledDriverArchive.ensure(unified0464File, UNIFIED_0464_SHA256) { appContext.assets.open(UNIFIED_0464_ASSET) }
-      BundledDriverArchive.ensure(unified051File, UNIFIED_051_SHA256) { appContext.assets.open(UNIFIED_051_ASSET) }
-      val bundled = automaticCandidates.firstOrNull {
-        readMetadata(it)?.let(::canLoadDriver) == true
+      for (bundle in bundles) {
+        BundledDriverArchive.ensure(bundle.file, bundle.sha256) {
+          appContext.assets.open("gpu_drivers/${bundle.archive}")
+        }
       }
+
+      val installedMarker = File(driverInstallDir, PACKAGE_MARKER)
+      if (installedMarker.isFile &&
+          GpuDriverPolicy.isRetiredBundle(installedMarker.readText(), bundles.map { it.marker })) {
+        useSystemDriver()
+        Log.i(TAG, "Switched to System driver after removal of a bundled driver")
+      }
+
       val done = choices.getBoolean(BOOTSTRAPPED, false)
       val active = getActiveDriver()
-      val library = File(driverInstallDir, GpuDriverPolicy.MALISX2_LIBRARY)
-      val identical = bundled != null && !done && active?.libraryName == GpuDriverPolicy.MALISX2_LIBRARY && library.isFile &&
-        ZipFile(bundled).use { zip ->
+      val installedLibrary = File(driverInstallDir, GpuDriverPolicy.MALISX2_LIBRARY)
+      val identical = !done && active?.libraryName == GpuDriverPolicy.MALISX2_LIBRARY &&
+        installedLibrary.isFile && ZipFile(maliSX2.file).use { zip ->
           zip.getInputStream(zip.getEntry(GpuDriverPolicy.MALISX2_LIBRARY)).use {
-            BundledDriverArchive.sha256(it) == BundledDriverArchive.sha256(library)
+            BundledDriverArchive.sha256(it) == BundledDriverArchive.sha256(installedLibrary)
           }
         }
-      if (bundled != null && GpuDriverPolicy.selectBundled(done, AppPrefs(appContext).setupComplete, active != null, identical,
-          allowAutoSelection = GpuDriverPolicy.allowsAutomaticBundle(rg477mMali, rgVitaProMali))) {
-        if (!useDriver(bundled)) throw IOException("Could not select bundled MaliSX2")
-        Log.i(TAG, "Bundled ${readMetadata(bundled)?.name} selected for a supported Mali handheld")
+      if (GpuDriverPolicy.selectBundled(done, AppPrefs(appContext).setupComplete, active != null, identical,
+          allowAutoSelection = GpuDriverPolicy.allowsAutomaticBundle(rg477mMali, rgVitaProMali)) &&
+          readMetadata(maliSX2.file)?.let(::canLoadDriver) == true) {
+        if (!useDriver(maliSX2.file)) throw IOException("Could not select bundled MaliSX2")
+        Log.i(TAG, "Selected bundled MaliSX2 0.6.1 for the initial setup")
       }
       choices.edit().putBoolean(BOOTSTRAPPED, true).commit()
-      Log.i(TAG, "Bundled MaliSX2 ready: ${bundledFiles.joinToString { it.name }} (checksums verified)")
+
+      val activeBundles = bundles.map { it.file }
+      activeBundles.first().parentFile?.listFiles()?.forEach { file ->
+        if (file.isFile && file.name.startsWith("hakux-bundled-") && file.extension == "zip" &&
+            file !in activeBundles) file.delete()
+      }
+      Log.i(TAG, "Bundled drivers ready: ${bundles.joinToString { it.archive }}")
       true
     } catch (e: Exception) {
-      Log.e(TAG, "Could not prepare bundled MaliSX2", e)
+      Log.e(TAG, "Could not prepare bundled GPU drivers", e)
       false
     }
   }
 
-  fun isBundledDriver(file: File): Boolean = bundledFiles.any { it.absolutePath == file.absolutePath }
-  fun isUnifiedDriver(file: File): Boolean = file.absolutePath == unifiedFile.absolutePath
-  private fun packageId(file: File): String = when (file.absolutePath) {
-    bundledFile.absolutePath -> BUNDLED_MARKER
-    combinedFile.absolutePath -> COMBINED_MARKER
-    unifiedFile.absolutePath -> UNIFIED_MARKER
-    releaseUnifiedFile.absolutePath -> RELEASE_UNIFIED_MARKER
-    unified0450File.absolutePath -> UNIFIED_0450_MARKER
-    unified0453File.absolutePath -> UNIFIED_0453_MARKER
-    unified0464File.absolutePath -> UNIFIED_0464_MARKER
-    unified051File.absolutePath -> UNIFIED_051_MARKER
-    else -> file.name
-  }
-  fun isBundledInUse(): Boolean = bundledFiles.any(::isInUse)
+  private fun bundleFor(file: File): BundledDriver? = bundles.firstOrNull { it.file.absolutePath == file.absolutePath }
+
+  fun isBundledDriver(file: File): Boolean = bundleFor(file) != null
+  private fun packageId(file: File): String = bundleFor(file)?.marker ?: file.name
+  fun isBundledInUse(): Boolean = bundles.any { isInUse(it.file) }
 
   private fun isAdreno(): Boolean = File("/dev/kgsl-3d0").exists()
 
@@ -159,8 +134,6 @@ object GpuDriverHelper {
       process.destroy()
     }
   }.getOrDefault("")
-
-  fun isRg477mMali(): Boolean = rg477mMali
 
   private val dimensity8300Mali: Boolean by lazy {
     Build.VERSION.SDK_INT >= 29 && Build.SUPPORTED_ABIS.contains("arm64-v8a") && File("/dev/mali0").exists() &&
@@ -215,11 +188,6 @@ object GpuDriverHelper {
         Build.MODEL, Build.DEVICE, Build.PRODUCT, vendorModel())
   }
 
-  fun isMaliSX2Device(): Boolean = !isAdreno() && (rg477mMali || dimensity8300Mali || rgVitaProMali || unisocT820Mali || unisocT618Mali)
-  fun isRgVitaPro(): Boolean = rgVitaProMali
-  fun isRg476h(): Boolean = rg476hMali
-  fun isUnisocT820(): Boolean = unisocT820Mali
-  fun isDimensity8300(): Boolean = dimensity8300Mali
   fun detectedChip(): GpuDriverPolicy.Chip? =
     GpuDriverPolicy.chip(unisocT820Mali, unisocT618Mali, dimensity8300Mali || rg477mMali)
 
@@ -410,7 +378,7 @@ object GpuDriverHelper {
       ?.mapNotNull { readMetadata(it)?.copy(path = it.absolutePath) }
       ?.sortedBy { it.name?.lowercase() }
       ?: emptyList()
-    val bundled = bundledFiles.mapNotNull(::readMetadata)
+    val bundled = bundles.mapNotNull { readMetadata(it.file) }
     return bundled + stored
   }
 

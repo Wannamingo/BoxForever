@@ -727,6 +727,7 @@ EXPORT int SDL_main(int argc, char *argv[])
         opt.horplus_scale = original / nc_aspect_ratio(aspect);
     }
     nc_present_set_aspect(aspect);
+    nc_present_set_horplus(opt.horplus);
     nc_options_apply(&opt);
     nc_present_set_widescreen(opt.video >= 0 && (opt.video & NC_VIDEO_WIDESCREEN));
     nc_log("hakuX-app", "native core: disc %s, hdd %s%s", disc, argv[2], opt.uncap ? ", frame rate uncapped" : "");

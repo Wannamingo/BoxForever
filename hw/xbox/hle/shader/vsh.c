@@ -386,6 +386,14 @@ static ProjectionValue projection_sum(ProjectionValue a, ProjectionValue b)
     if (a.kind == PROJ_UNIFORM) {
         return b;
     }
+    /* A projected position can carry an additional vertex-dependent screen
+     * offset (for instance a displacement along a transformed normal). */
+    if (a.kind == PROJ_DIVIDED && varying(b)) {
+        return a;
+    }
+    if (b.kind == PROJ_DIVIDED && varying(a)) {
+        return b;
+    }
     if (varying(a) && varying(b)) {
         return (ProjectionValue){ .kind = PROJ_VERTEX, .geometry = a.geometry || b.geometry };
     }

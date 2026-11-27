@@ -44,7 +44,7 @@ bool hle_present_unchanged(struct ANativeWindow *win, uint64_t key);
 bool hle_present_begin(struct ANativeWindow *win, uint32_t *w, uint32_t *h);
 /* frame: the front frame, held until a newer one is taken; its size, false
  * when there is none yet. */
-bool hle_present_frame(uint32_t *w, uint32_t *h);
+bool hle_present_frame(uint32_t *w, uint32_t *h, bool *horplus);
 /* end: the frame drawn into the window's middle (sx, sy: its half size in
  * clip space, 1 the whole window), the rest black, through the display's
  * gamma ramp, and presented. fxaa: FXAA over each new frame first; average:

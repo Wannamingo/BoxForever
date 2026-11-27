@@ -306,7 +306,11 @@ extern float g_hle_horplus_scale;
 /* Screen-space HUD: 4:3 width at the left, centre, or right anchor. */
 #define HLE_HUD_ANCHOR_FLAG 32768u
 #define HLE_HUD_ANCHOR_GLSL \
-    "  if ((pc.flags & 32768u) != 0u) ndc.x = ndc.x * pc.fog.w + pc.mvp[0][0];\n"
+    "  if ((pc.flags & 32768u) != 0u) {\n" \
+    "    float dx = ndc.x < pc.mvp[0][1] ? pc.mvp[0][0] :\n" \
+    "               ndc.x < pc.mvp[0][2] ? pc.mvp[0][3] : pc.mvp[1][0];\n" \
+    "    ndc.x = ndc.x * pc.fog.w + dx;\n" \
+    "  }\n"
 #define HLE_SUBPIXEL_GLSL(v) \
     "  " v " = (pc.flags & 8192u) != 0u ? trunc(" v " * 16.0) / 16.0 : " v " - 0.03125;\n"
 

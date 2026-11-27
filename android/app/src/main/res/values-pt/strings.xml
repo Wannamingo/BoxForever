@@ -47,9 +47,7 @@
   <string name="settings_gpu_driver_active_version">%1$s (%2$s)</string>
   <string name="settings_gpu_driver_not_supported">Drivers personalizados estão disponíveis no Adreno e no RG477M / Dimensity 8300 com MaliSX2.</string>
   <string name="gpu_driver_desc">Selecione Sistema, qualquer driver empacotado ou importe um ZIP em qualquer dispositivo. A compatibilidade real depende da GPU, firmware e versão Android. Uma alteração entra em vigor no próximo início do jogo.</string>
-  <string name="gpu_driver_malisx2">MaliSX2 está incluído para RG477M / Dimensity 8300 (MT6897, Mali-G615). RG477M no Android 14+ oferece Unified P48r1 e M2 + DS1; oficial 0.2.3 permanece disponível para reversão. Instalações novas mantêm o padrão anterior empacotado; as atualizações preservam sua seleção. Comece em 1× . Reiniciar totalmente o aplicativo e o jogo após a mudança de drivers.</string>
   <string name="gpu_driver_bundled">Não é necessário fazer download ou importar separadamente.</string>
-  <string name="gpu_driver_malisx2_vita">Suporte experimental ao RG VITA Pro (RK3576, Mali-G52). MaliSX2 0.2.3 está incluído; O driver do sistema também pode ser selecionado para comparação. Comece com resolução 1× . Reinicie o jogo depois de trocar de driver.</string>
   <string name="gpu_driver_section">Drivers</string>
   <string name="gpu_driver_system_choice">Driver do sistema</string>
   <string name="gpu_driver_system_desc">O driver que veio com seu dispositivo.</string>

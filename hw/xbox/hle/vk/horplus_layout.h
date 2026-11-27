@@ -19,6 +19,55 @@ typedef struct HleHorplusLayout {
 
 enum { HLE_HORPLUS_LEFT = -1, HLE_HORPLUS_CENTER, HLE_HORPLUS_RIGHT, HLE_HORPLUS_KEEP };
 
+typedef struct HleHorplusBands {
+    float left[3], right[3];
+    unsigned used;
+} HleHorplusBands;
+
+static inline void hle_horplus_triangle(HleHorplusBands *bands, float left, float right)
+{
+    const float center = (left + right) * 0.5f;
+    const unsigned i = center < 0.33f ? 0 : center > 0.67f ? 2 : 1;
+    const unsigned bit = 1u << i;
+    if (bands->used & bit) {
+        bands->left[i] = fminf(bands->left[i], left);
+        bands->right[i] = fmaxf(bands->right[i], right);
+    } else {
+        bands->left[i] = left;
+        bands->right[i] = right;
+        bands->used |= bit;
+    }
+}
+
+/* Split a draw only at empty horizontal gaps. Every triangle then gets one
+ * transform and the pieces within each part retain their spacing. */
+static inline bool hle_horplus_split(const HleHorplusBands *bands, float cut[2], int anchor[3])
+{
+    if (!(bands->used & (bands->used - 1))) {
+        return false;
+    }
+    unsigned n = 0;
+    float prev_right = 0;
+    for (unsigned i = 0; i < 3; i++) {
+        if (!(bands->used & (1u << i))) {
+            continue;
+        }
+        if (bands->right[i] - bands->left[i] > 0.37f || (n && bands->left[i] - prev_right < 0.06f)) {
+            return false;
+        }
+        if (n) {
+            cut[n - 1] = (prev_right + bands->left[i]) * 0.5f;
+        }
+        prev_right = bands->right[i];
+        anchor[n++] = (int)i - 1;
+    }
+    if (n == 2) {
+        cut[1] = 1.5f;
+        anchor[2] = anchor[1];
+    }
+    return true;
+}
+
 static inline int hle_horplus_anchor(HleHorplusBox box, bool world, unsigned vertices,
                                     HleHorplusLayout *layout)
 {

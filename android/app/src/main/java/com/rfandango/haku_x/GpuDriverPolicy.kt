@@ -68,6 +68,10 @@ object GpuDriverPolicy {
                     allowAutoSelection: Boolean = true): Boolean =
     allowAutoSelection && !bootstrapped && (identical || (!setupComplete && !hasActive))
 
+  /** Imported filenames cannot contain the colon used by the bundled-package marker. */
+  fun isRetiredBundle(marker: String, currentMarkers: Collection<String>): Boolean =
+    marker.startsWith("bundled:") && marker !in currentMarkers
+
   /** A single safe filename for the native driver's pipe-delimited loader argument. */
   fun acceptsLibrary(library: String?): Boolean =
     library != null && Regex("[A-Za-z0-9_.-]+\\.so").matches(library)
