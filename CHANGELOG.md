@@ -1,11 +1,12 @@
 # Changelog
 
-## BoxForever 1.0.6
+## BoxForever 1.1.0
 
 - Bundle MaliSX2 0.6.1 and Unified 0.5.1. List both drivers, System Vulkan, and ZIP import on every model.
 - Switch to System Vulkan when the selected bundled driver has been removed.
 - Improve Hor+ HUD placement and present frames in their original proportions when no suitable 3D view is detected.
-- [Русский](releases/1.0.6.ru.md) · [English](releases/1.0.6.en.md)
+- Re-emit dynamic Vulkan state after pipeline binds on Adreno 730 with Qualcomm driver 0615.60. Verified in Crazy Taxi 3 on Huawei.
+- [Русский](releases/1.1.0.ru.md) · [English](releases/1.1.0.en.md) · [Español](releases/1.1.0.es.md) · [Português (Brasil)](releases/1.1.0.pt-BR.md)
 
 ## BoxForever 1.0.5 — 2026-11-26
 

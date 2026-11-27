@@ -8,13 +8,14 @@ An independent Android emulator for original Xbox games based on hakuX. Supports
 
 **[Latest APK and checksums](https://github.com/Wannamingo/BoxForever/releases/latest)** · **[Release history](https://github.com/Wannamingo/BoxForever/releases)** · **[HakuX-Mali 1.9 changes](releases/1.9.en.md)**
 
-## What's new in BoxForever 1.0.6
+## What's new in BoxForever 1.1.0
 
 - Includes MaliSX2 0.6.1 and Unified 0.5.1. System Vulkan, both bundled drivers, and ZIP import appear on every device model.
 - Hor+ widens recognized 3D scenes, keeps full-screen menus in proportion, and improves HUD placement.
+- Fixed missing road and sky in Crazy Taxi 3 on Adreno 730 with the system Qualcomm 0615.60 driver.
 - When an update removes the selected bundled driver, the app switches to System Vulkan. Imported ZIPs and selections of Unified 0.5.1 are preserved.
 
-[BoxForever 1.0.6 release notes](releases/1.0.6.en.md).
+[BoxForever 1.1.0 release notes](releases/1.1.0.en.md).
 
 ## What's new in BoxForever 1.0.5
 

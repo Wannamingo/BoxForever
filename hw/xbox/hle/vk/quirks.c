@@ -29,6 +29,12 @@ static bool qualcomm_proprietary(const HleDriver *d)
     return d->drv.driverID == VK_DRIVER_ID_QUALCOMM_PROPRIETARY;
 }
 
+static bool adreno_730_0615_60(const HleDriver *d)
+{
+    return qualcomm_proprietary(d) && d->props.driverVersion == 0x80267000u &&
+           !strcmp(d->props.deviceName, "Adreno (TM) 730");
+}
+
 static bool mesa_turnip(const HleDriver *d)
 {
     return d->drv.driverID == VK_DRIVER_ID_MESA_TURNIP;
@@ -126,7 +132,10 @@ static const HleQuirk k_quirks[] = {
      * layer with a per-vertex mask (v4); after a pipeline change the draw
      * read v4 from offset 144 of the vertex instead of 64 (wrong letters). */
     { HLE_QUIRK_VI_AFTER_PIPELINE, "vi_after_pipeline", qualcomm_proprietary },
-    { HLE_QUIRK_STATE_AFTER_PIPELINE, "state_after_pipeline", NULL },
+    /* Huawei Adreno 730, Qualcomm 0615.60: Crazy Taxi 3 lost distant road
+     * and sky draws. Re-emitting state on pipeline binds restores the scene
+     * with extended dynamic state still enabled. */
+    { HLE_QUIRK_STATE_AFTER_PIPELINE, "state_after_pipeline", adreno_730_0615_60 },
     /* Turnip: Halo's floors flashed unlit in single frames, its lighting
      * passes over the base pass split by a mid-frame kick; the stock Adreno
      * driver drew them right (A/B, 2026-10-14). */
